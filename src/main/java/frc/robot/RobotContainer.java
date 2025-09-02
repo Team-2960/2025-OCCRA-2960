@@ -1,0 +1,79 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+package frc.robot;
+
+import static edu.wpi.first.units.Units.Feet;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.subsystems.Drivetrain;
+
+public class RobotContainer {
+
+    private final Drivetrain drivetrain;
+
+    private final CommandXboxController driverCtrl;
+
+    private final SendableChooser<Command> autonChooser;
+
+    /**
+     * Sets up the robot
+     */
+    public RobotContainer() {
+        // Initialize Robot
+        drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
+                Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
+
+        // Initialize Controls
+        driverCtrl = new CommandXboxController(0);
+
+        // Initialize auton chooser
+        autonChooser = new SendableChooser<>();
+        autonChooser.setDefaultOption("None", Commands.print("No autonomous command configured"));
+        autonChooser.addOption("Drive Forward", drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
+        autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
+        
+        // Configure control bindings
+        configureBindings();
+    }
+
+    /**
+     * Setup command triggers and bindings
+     */
+    private void configureBindings() {
+        // Map Driver controls
+        drivetrain.setDefaultCommand(
+            Commands.runEnd(
+                () -> drivetrain.setDrive(
+                    Volts.of(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12),
+                    Volts.of(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12)),
+                () -> drivetrain.setDrive(Volts.zero(), Volts.zero()),
+                drivetrain));
+    }
+
+    /**
+     * Gets the currently selected auton
+     * @return
+     */
+    public Command getAutonomousCommand() {
+        return autonChooser.getSelected();
+    }
+
+    /**
+     * Creates auton that drives forward, turns left, and then drives forward
+     * @return
+     */
+    private Command getDriveTurnDriveAuto() {
+        return Commands.sequence(
+            drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)),
+            drivetrain.getTurnTimeCmd(Seconds.of(3),  Volts.of(3)),
+            drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
+    }
+}
