@@ -7,6 +7,8 @@ import com.revrobotics.spark.SparkBase.ResetMode;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.function.Supplier;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
@@ -123,6 +125,18 @@ public class Drivetrain extends SubsystemBase {
     public void resetDistance() {
         lEncoder.setPosition(0);
         rEncoder.setPosition(0);
+    }
+
+    /**
+     * Drive command factory
+     * @param left  left drive voltage supplier
+     * @param right right drive voltage supplier
+     * @return new drive command
+     */
+    public Command getDriveCmd(Supplier<Voltage> left, Supplier<Voltage> right) {
+        return this.runEnd(
+                () -> setDrive(left.get(), right.get()),
+                () -> setDrive(Volts.zero(), Volts.zero()));
     }
 
     /**

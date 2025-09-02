@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -22,6 +23,9 @@ public class RobotContainer {
     private final CommandXboxController driverCtrl;
 
     private final SendableChooser<Command> autonChooser;
+
+    private final MutVoltage leftCtrlVolt = Volts.mutable(0);
+    private final MutVoltage rightCtrlVolt = Volts.mutable(0);
 
     /**
      * Sets up the robot
@@ -50,12 +54,9 @@ public class RobotContainer {
     private void configureBindings() {
         // Map Driver controls
         drivetrain.setDefaultCommand(
-            Commands.runEnd(
-                () -> drivetrain.setDrive(
-                    Volts.of(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12),
-                    Volts.of(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12)),
-                () -> drivetrain.setDrive(Volts.zero(), Volts.zero()),
-                drivetrain));
+            drivetrain.getDriveCmd(
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)));
     }
 
     /**
