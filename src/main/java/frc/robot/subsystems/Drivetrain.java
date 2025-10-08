@@ -106,6 +106,17 @@ public class Drivetrain extends SubsystemBase {
         rfMotor.setVoltage(right);
     }
 
+    public void driveRMotor(Voltage voltage){
+        rfMotor.setVoltage(voltage);
+    }
+    public void driveLMotor(Voltage voltage){
+        lfMotor.setVoltage(voltage);
+    }
+    public void driveBMotor(Voltage voltage){
+        lfMotor.setVoltage(voltage);
+        rfMotor.setVoltage(voltage);
+    }
+
     /**
      * Gets the average distance traveled by both sides of the drivetrain
      * 
@@ -139,6 +150,27 @@ public class Drivetrain extends SubsystemBase {
                 () -> setDrive(Volts.zero(), Volts.zero()));
     }
 
+    public Command getDriveRMotorCmd(Supplier<Voltage> voltage){
+        return this.runEnd( 
+            () -> driveRMotor(voltage.get()),
+            () -> driveRMotor(Volts.zero())
+        );
+    }
+
+    public Command getDriveLMotorCmd(Supplier<Voltage> voltage){
+        return this.runEnd( 
+            () -> driveLMotor(voltage.get()),
+            () -> driveLMotor(Volts.zero())
+        );
+    }
+
+
+    public Command getDriveBMotor(Supplier<Voltage> voltage){
+        return this.runEnd(
+            () -> driveBMotor(voltage.get()),
+            () -> driveBMotor(Volts.zero())
+            );
+    }
     /**
      * Generates a command to drive forward for a certain distance
      * 

@@ -57,7 +57,14 @@ public class RobotContainer {
             drivetrain.getDriveCmd(
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)));
+
+        driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
+        driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
+        driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
+        driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
     }
+
+
 
     /**
      * Gets the currently selected auton
