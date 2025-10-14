@@ -14,11 +14,14 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
 
 public class RobotContainer {
 
     private final Drivetrain drivetrain;
+    
+    private final ColorSensor colorSensor;
 
     private final CommandXboxController driverCtrl;
 
@@ -34,6 +37,8 @@ public class RobotContainer {
         // Initialize Robot
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
+
+        colorSensor = new ColorSensor();
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
