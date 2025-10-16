@@ -16,12 +16,15 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
 
     private final Drivetrain drivetrain;
     
-    private final ColorSensor colorSensor;
+    //private final ColorSensor colorSensor;
+
+    private final Vision vision;
 
     private final CommandXboxController driverCtrl;
 
@@ -38,7 +41,9 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
-        colorSensor = new ColorSensor();
+        //colorSensor = new ColorSensor();
+
+        vision = new Vision("Microsoft_LifeCam _HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
