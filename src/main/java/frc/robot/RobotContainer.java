@@ -43,7 +43,7 @@ public class RobotContainer {
 
         //colorSensor = new ColorSensor();
 
-        vision = new Vision("Microsoft_LifeCam _HD-3000");
+        vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
