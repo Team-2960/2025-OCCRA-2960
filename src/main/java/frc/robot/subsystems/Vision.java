@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
 
 import org.photonvision.PhotonCamera;
 
@@ -15,25 +16,22 @@ public class Vision extends SubsystemBase{
     private final PhotonCamera camera;
 
     private double area;
-    private Colors color;
-
-    enum Colors{
-        YELLOW,
-        WHITE;
-    }
+    private TreeMap<Integer, String> colorMap;
+    private String curColor;
 
     public Vision(String name){
         camera = new PhotonCamera(name);
         area = 0;
+        colorMap.put(0, "yellow");
+        colorMap.put(1, "white");
     }
 
     public void updateVision(){
         var results = camera.getAllUnreadResults();
-        double lastArea = 0;
+        double colorArea;
         ArrayList<Double> areaList = new ArrayList<Double>();
-        Colors[] colors = Colors.values();
 
-        for (int i = 0; i < Colors.values().length; i++){
+        for (int i = 0; i < colorMap.size(); i++){
 
             camera.setPipelineIndex(i);
 
@@ -56,9 +54,9 @@ public class Vision extends SubsystemBase{
 
         double maxValue = Collections.max(areaList);
         int idxArea = areaList.indexOf(maxValue);
-        this.color = colors[idxArea];
+        this.curColor = colorMap.get(idxArea);
         SmartDashboard.putNumber("max area", maxValue);
-
+        SmartDashboard.putString("Value Array", areaList.toString());
     }
 
     @Override
@@ -66,7 +64,7 @@ public class Vision extends SubsystemBase{
         updateVision();
         SmartDashboard.putBoolean("Is Connected", camera.isConnected());
         SmartDashboard.putNumber("Target Area", area);
-        SmartDashboard.putString("Current Color", color.toString());
+        SmartDashboard.putString("Current Color", curColor.toString());
     }
 
     
