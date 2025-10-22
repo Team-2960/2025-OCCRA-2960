@@ -131,6 +131,11 @@ public class Drivetrain extends SubsystemBase {
         return Inches.of(avgDist);
     }
 
+    @Override
+    public void periodic(){
+        
+    }
+
     /**
      * Resets the drive distance to zero
      */

@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Indexer;
 import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
@@ -25,6 +26,8 @@ public class RobotContainer {
     //private final ColorSensor colorSensor;
 
     private final Vision vision;
+
+    private final Indexer indexer;
 
     private final CommandXboxController driverCtrl;
 
@@ -41,6 +44,7 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
+        indexer = new Indexer(6);
         //colorSensor = new ColorSensor();
 
         vision = new Vision("Microsoft_LifeCam_HD-3000");
@@ -68,10 +72,11 @@ public class RobotContainer {
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)));
 
-        driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
-        driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
-        driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
-        driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
+         driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
+         driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
+         driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
+         driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
+        driverCtrl.rightBumper().whileTrue(indexer.getDriveCmd(() -> Volts.of(-12)));
     }
 
 
