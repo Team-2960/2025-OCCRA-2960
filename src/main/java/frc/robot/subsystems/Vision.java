@@ -22,6 +22,7 @@ public class Vision extends SubsystemBase{
     public Vision(String name){
         camera = new PhotonCamera(name);
         area = 0;
+        colorMap = new TreeMap<Integer, String>();
         colorMap.put(0, "yellow");
         colorMap.put(1, "white");
     }
@@ -56,7 +57,14 @@ public class Vision extends SubsystemBase{
         int idxArea = areaList.indexOf(maxValue);
         this.curColor = colorMap.get(idxArea);
         SmartDashboard.putNumber("max area", maxValue);
-        SmartDashboard.putString("Value Array", areaList.toString());
+
+        double[] doubleList = new double[2];
+
+        for (int i = 0; i < areaList.size(); i++){
+            doubleList[i] = (double) ((int) areaList.get(i).doubleValue());
+        }
+
+        SmartDashboard.putNumberArray("Values Array", doubleList);
     }
 
     @Override
@@ -64,7 +72,7 @@ public class Vision extends SubsystemBase{
         updateVision();
         SmartDashboard.putBoolean("Is Connected", camera.isConnected());
         SmartDashboard.putNumber("Target Area", area);
-        SmartDashboard.putString("Current Color", curColor.toString());
+        SmartDashboard.putString("Current Color", curColor);
     }
 
     

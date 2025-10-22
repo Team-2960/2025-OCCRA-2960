@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.Indexer;
 import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
@@ -31,6 +32,8 @@ public class RobotContainer {
     //private final ColorSensor colorSensor;
 
     private final Vision vision;
+
+    private final Indexer indexer;
 
     private final CommandXboxController driverCtrl;
 
@@ -47,6 +50,7 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
+        indexer = new Indexer(6);
         //colorSensor = new ColorSensor();
 
         elevator = new Elevator(6);
