@@ -5,10 +5,13 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Feet;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.MutAngularVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,11 +19,14 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
 
     private final Drivetrain drivetrain;
+
+    private final Elevator elevator;
     
     //private final ColorSensor colorSensor;
 
@@ -42,6 +48,9 @@ public class RobotContainer {
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
         //colorSensor = new ColorSensor();
+
+        elevator = new Elevator(6);
+
 
         vision = new Vision("Microsoft_LifeCam_HD-3000");
 
@@ -68,12 +77,15 @@ public class RobotContainer {
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)));
 
-        driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
-        driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
-        driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
-        driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
-    }
+        // driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
+        // driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
+        // driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
+        // driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
 
+        driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> new MutAngularVelocity(1, 1, RotationsPerSecond)));
+    }
+        
+    //I like Brocolli
 
 
     /**
