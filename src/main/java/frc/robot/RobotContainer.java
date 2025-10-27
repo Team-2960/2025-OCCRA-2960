@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Feet;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volt;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.io.PrintStream;
@@ -16,9 +17,11 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.MutAngularVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
@@ -37,9 +40,9 @@ public class RobotContainer {
     
     //private final ColorSensor colorSensor;
 
-    private final Vision vision;
+    //private final Vision vision;
 
-    //private final Indexer indexer;
+    private final Indexer indexer;
 
     private final CommandXboxController driverCtrl;
 
@@ -54,17 +57,16 @@ public class RobotContainer {
      */
     public RobotContainer() {
         // Initialize Robot
-        drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
-                Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
+        drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
+                Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
-        //indexer = new Indexer(5);
+        indexer = new Indexer(Constants.topIndexerMotorID, Constants.botIndexMotorID);
         //colorSensor = new ColorSensor();
 
-        elevator = new Elevator(5);
+        elevator = new Elevator(Constants.elevatorMotorID);
 
-        intake = new Intake(6);
-
-        vision = new Vision("Microsoft_LifeCam_HD-3000");
+        intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
+        //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
@@ -86,22 +88,35 @@ public class RobotContainer {
         // Map Driver controls
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * 12, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * 12, Volts)
         ));
         
         // intake
-        intake.setDefaultCommand(intake.getIntakeCmd(
-            () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
-         ));
+        // intake.setDefaultCommand(intake.getIntakeCmd(
+        //     () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
+        //  ));
 
-        // driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
-        // driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
-        // driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
-        // driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
+        // driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
+        // driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
 
-        driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
-        driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
+        driverCtrl.leftBumper()
+            .whileTrue(
+                new ParallelCommandGroup(
+                    intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volts.of(6)),
+                    indexer.getIntakeCmd(() -> Volts.of(6))
+            )
+        );
+
+        driverCtrl.rightBumper()
+            .whileTrue(
+                new ParallelCommandGroup(
+                    intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volts.of(-6)),
+                    indexer.getIntakeCmd(() -> Volts.of(-6))
+            )
+        );
+
+        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(6)));
     }
 
 

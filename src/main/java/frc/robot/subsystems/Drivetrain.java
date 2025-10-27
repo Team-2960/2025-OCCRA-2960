@@ -50,14 +50,14 @@ public class Drivetrain extends SubsystemBase {
      *                    wheel per turn of the motor.
      * @param wheelRadius Drive wheel radius.
      */
-    public Drivetrain(int lfMotorID, int lrMotorID, int rfMotorID, int rrMotorID, double driveRatio,
+    public Drivetrain(int lfMotorID, int lbMotorID, int rfMotorID, int rbMotorID, double driveRatio,
             Distance wheelRadius) {
 
         // Create Motors
         lfMotor = new SparkMax(lfMotorID, MotorType.kBrushless);
-        lrMotor = new SparkMax(lrMotorID, MotorType.kBrushless);
+        lrMotor = new SparkMax(lbMotorID, MotorType.kBrushless);
         rfMotor = new SparkMax(rfMotorID, MotorType.kBrushless);
-        rrMotor = new SparkMax(rrMotorID, MotorType.kBrushless);
+        rrMotor = new SparkMax(rbMotorID, MotorType.kBrushless);
 
         // Calculate the position conversion factor
         double distPerRev = wheelRadius.in(Inches) * Math.PI * driveRatio; // Distance traveled for one revolution of
