@@ -12,6 +12,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -23,7 +24,7 @@ public class Elevator extends SubsystemBase{
 
     public Elevator(int elevMotorID){
         elevMotor = new SparkMax(elevMotorID, MotorType.kBrushless);
-        elevPID = new PIDController(0.001, 0, 0);
+        elevPID = new PIDController(0.5, 0, 0);
         relEncoder = elevMotor.getEncoder();
     }
     public void setVoltage(Voltage voltage){
@@ -32,7 +33,7 @@ public class Elevator extends SubsystemBase{
 
     public void setRate(AngularVelocity rate){
         double voltage = elevPID.calculate(getRate().in(RadiansPerSecond), rate.in(RadiansPerSecond));
-        setVoltage(Volts.of(0));
+        setVoltage(Volts.of(voltage));
     }
 
     public AngularVelocity getRate(){
@@ -46,9 +47,23 @@ public class Elevator extends SubsystemBase{
     }
 
 
-    public Command getElevRateCmd(Supplier<MutAngularVelocity> rate){
+    public Command getElevRateCmd(Supplier<AngularVelocity> rate){
         return this.runEnd(
             () -> setRate(rate.get()),
-            () -> setRate(AngularVelocity.ofBaseUnits(0, RadiansPerSecond)));
+            () -> setVoltage(Volts.zero()));
+    }
+
+    public String getCommandString(){
+        if (!(this.getCurrentCommand() == null)){
+            return this.getCurrentCommand().getName();
+        }else{
+            return "null";
+        }
+    }
+
+    @Override
+    public void periodic(){
+        SmartDashboard.putNumber("In Voltage", elevMotor.getAppliedOutput());
+        SmartDashboard.putString("Elev Command", getCommandString());
     }
 }

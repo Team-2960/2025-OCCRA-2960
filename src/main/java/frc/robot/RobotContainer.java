@@ -10,7 +10,10 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.io.PrintStream;
+
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.MutAngularVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -21,6 +24,7 @@ import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.Indexer;
+import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
@@ -28,12 +32,14 @@ public class RobotContainer {
     private final Drivetrain drivetrain;
 
     private final Elevator elevator;
+
+    private final Intake intake;
     
     //private final ColorSensor colorSensor;
 
     private final Vision vision;
 
-    private final Indexer indexer;
+    //private final Indexer indexer;
 
     private final CommandXboxController driverCtrl;
 
@@ -41,6 +47,7 @@ public class RobotContainer {
 
     private final MutVoltage leftCtrlVolt = Volts.mutable(0);
     private final MutVoltage rightCtrlVolt = Volts.mutable(0);
+    private final MutVoltage intakeCtrlVolt = Volts.mutable(0);
 
     /**
      * Sets up the robot
@@ -50,11 +57,12 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lrDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rrDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
-        indexer = new Indexer(6);
+        //indexer = new Indexer(5);
         //colorSensor = new ColorSensor();
 
-        elevator = new Elevator(6);
+        elevator = new Elevator(5);
 
+        intake = new Intake(6);
 
         vision = new Vision("Microsoft_LifeCam_HD-3000");
 
@@ -79,17 +87,22 @@ public class RobotContainer {
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * 12, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)));
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * 12, Volts)
+        ));
+        
+        // intake
+        intake.setDefaultCommand(intake.getIntakeCmd(
+            () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
+         ));
 
         // driverCtrl.a().onTrue(drivetrain.getDriveRMotorCmd(() -> Volts.of(6)));
         // driverCtrl.b().onTrue(drivetrain.getDriveLMotorCmd(() -> Volts.of(6)));
         // driverCtrl.x().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(12)));
         // driverCtrl.y().onTrue(drivetrain.getDriveBMotor(() -> Volts.of(0)));
 
-        driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> new MutAngularVelocity(1, 1, RotationsPerSecond)));
+        driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
+        driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
     }
-        
-    //I like Brocolli
 
 
     /**
@@ -110,4 +123,5 @@ public class RobotContainer {
             drivetrain.getTurnTimeCmd(Seconds.of(3),  Volts.of(3)),
             drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
     }
+
 }
