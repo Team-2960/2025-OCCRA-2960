@@ -88,10 +88,19 @@ public class RobotContainer {
         // Map Driver controls
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * 12, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * 12, Volts)
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * 9, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * 9, Volts)
         ));
         
+        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
+        driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
+
+        driverCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Index
+        driverCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Index Reverse
+
+        driverCtrl.a().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Index In
+        driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
+
         // intake
         // intake.setDefaultCommand(intake.getIntakeCmd(
         //     () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
@@ -100,7 +109,7 @@ public class RobotContainer {
         // driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
         // driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
 
-        driverCtrl.leftBumper()
+     /*/    driverCtrl.leftBumper()
             .whileTrue(
                 new ParallelCommandGroup(
                     intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volts.of(6)),
@@ -108,6 +117,7 @@ public class RobotContainer {
             )
         );
 
+        //INTAKE + INDEXER
         driverCtrl.rightBumper()
             .whileTrue(
                 new ParallelCommandGroup(
@@ -116,7 +126,8 @@ public class RobotContainer {
             )
         );
 
-        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(6)));
+        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(6))); //INTAKE
+        /* */
     }
 
 

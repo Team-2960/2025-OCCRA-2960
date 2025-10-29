@@ -32,13 +32,13 @@ public class Indexer extends SubsystemBase {
         botIndexMotor.setVoltage(botVolt);
     }
 
-    public Command getIntakeCmd(Supplier<Voltage> voltage) {
+    public Command getIndexCmd(Supplier<Voltage> voltage) {
         return this.runEnd(
                 () -> setVoltage(voltage.get()),
                 () -> setVoltage(Volts.zero()));
     }
 
-    public Command getIndIntakeCmd(Supplier<Voltage> topVolt, Supplier<Voltage> botVolt) {
+    public Command getIndIndexCmd(Supplier<Voltage> topVolt, Supplier<Voltage> botVolt) {
         return this.runEnd(
                 () -> setVoltage(topVolt.get(), botVolt.get()),
                 () -> setVoltage(Volts.zero()));

@@ -15,8 +15,8 @@ public class Constants {
     public static final int rfDriveMotorID = 1;
     public static final int rbDriveMotorID = 2;
 
-    public static final int lIntakeMotorID = 7;
-    public static final int rIntakeMotorID = 5;
+    public static final int lIntakeMotorID = 5;
+    public static final int rIntakeMotorID = 7;
     public static final int elevatorMotorID = 10;
     public static final int topIndexerMotorID = 3;
     public static final int botIndexMotorID = 4;
