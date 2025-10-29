@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
+import frc.robot.subsystems.EndEffector;
 import frc.robot.subsystems.Indexer;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Vision;
@@ -44,7 +45,11 @@ public class RobotContainer {
 
     private final Indexer indexer;
 
+    private final EndEffector endEffector;
+
     private final CommandXboxController driverCtrl;
+
+    private final CommandXboxController operatorCtrl;
 
     private final SendableChooser<Command> autonChooser;
 
@@ -66,10 +71,13 @@ public class RobotContainer {
         elevator = new Elevator(Constants.elevatorMotorID);
 
         intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
+
+        endEffector = new EndEffector(Constants.endEffectorMotorID);
         //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
+        operatorCtrl = new CommandXboxController(1);
 
         // Initialize auton chooser
         autonChooser = new SendableChooser<>();
@@ -91,20 +99,32 @@ public class RobotContainer {
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * 9, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * 9, Volts)
         ));
+
+        //driverCtrl.axisGreaterThan(3, 0.1).whileTrue(elevator.getElevVoltCmd(() -> Volts.of(driverCtrl.getRightTriggerAxis() * 6)));
         
-        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
-        driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
+        // driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
+        // driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
 
-        driverCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Index
-        driverCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Index Reverse
+        operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(6))
+            .alongWith(intake.getIntakeCmd(() -> Volts.of(6))));
 
-        driverCtrl.a().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Index In
-        driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
+        operatorCtrl.rightBumper().whileTrue(indexer.getIndexCmd(() -> Volts.of(6))
+            .alongWith(intake.getIntakeCmd(() -> Volts.of(-6)))); //Index Reverse
+
+        operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
+
+        operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
+
+        operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
+
+
+        // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
 
         // intake
         // intake.setDefaultCommand(intake.getIntakeCmd(
         //     () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
         //  ));
+
 
         // driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
         // driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
