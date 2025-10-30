@@ -96,8 +96,8 @@ public class RobotContainer {
         // Map Driver controls
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * 9, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * 9, Volts)
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
         //driverCtrl.axisGreaterThan(3, 0.1).whileTrue(elevator.getElevVoltCmd(() -> Volts.of(driverCtrl.getRightTriggerAxis() * 6)));
@@ -105,18 +105,21 @@ public class RobotContainer {
         // driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
         // driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
 
-        operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(6))
-            .alongWith(intake.getIntakeCmd(() -> Volts.of(6))));
+        operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-Constants.indexVolt), () -> Volt.of(Constants.indexVolt))
+            .alongWith(intake.getIntakeCmd(() -> Volts.of(Constants.intakeVolt))));
 
-        operatorCtrl.rightBumper().whileTrue(indexer.getIndexCmd(() -> Volts.of(6))
-            .alongWith(intake.getIntakeCmd(() -> Volts.of(-6)))); //Index Reverse
+        operatorCtrl.rightBumper().whileTrue(indexer.getIndexCmd(() -> Volts.of(Constants.indexVolt))
+            .alongWith(intake.getIntakeCmd(() -> Volts.of(-Constants.intakeVolt)))); //Index Reverse
 
         operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
+
+        operatorCtrl.povLeft().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(3)));
+
+        operatorCtrl.povRight().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(3), () -> Volt.of(6)));
 
         operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
 
         operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
-
 
         // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
 

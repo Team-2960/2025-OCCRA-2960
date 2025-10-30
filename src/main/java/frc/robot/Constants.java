@@ -31,7 +31,10 @@ public class Constants {
     public static final int botIndexMotorID = 4;
     public static final int endEffectorMotorID = 6;
 
-
+    // Motor Voltages
+    public static final double driveVolt = 8;
+    public static final double intakeVolt = 5;
+    public static final double indexVolt = 6;
 
     public static final double elevatorScale = 1;
     public static final Angle elevatorRampDownDist = Angle.ofBaseUnits(10, Rotations);
