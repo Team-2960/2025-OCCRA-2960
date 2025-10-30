@@ -12,7 +12,11 @@ import edu.wpi.first.units.measure.Distance;
 public class Constants {
 
     //Elevator Constants
-    public static final AngularVelocity maxElevatorSpeed = AngularVelocity.ofBaseUnits(2, RotationsPerSecond);
+    public static final AngularVelocity maxElevatorSpeed = AngularVelocity.ofBaseUnits(12, RotationsPerSecond);
+    public static final double elevatorScale = 1;
+    public static final Angle elevatorRampDownDist = Angle.ofBaseUnits(0.5, Rotations);
+    public static final Angle elevTopLim = Rotations.of(12.71);
+    public static final Angle elevBotLim = Rotations.of(0.2);
 
     // Drivetrain Constants
     public static final Distance wheelDiameter = Inches.of(3);
@@ -34,12 +38,11 @@ public class Constants {
     // Motor Voltages
     public static final double driveVolt = 8;
     public static final double intakeVolt = 5;
+    public static final double topIntakeVolt = 6;
+    public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;
 
-    public static final double elevatorScale = 1;
-    public static final Angle elevatorRampDownDist = Angle.ofBaseUnits(10, Rotations);
-    public static final Angle elevTopLim = Rotations.of(12.4);
-    public static final Angle elevBotLim = Rotations.of(0.2);
+    
 
     
 }

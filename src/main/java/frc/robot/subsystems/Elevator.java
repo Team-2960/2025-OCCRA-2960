@@ -11,10 +11,13 @@ import static edu.wpi.first.units.Units.Volts;
 import java.util.function.Supplier;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.servohub.ServoHub.ResetMode;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -34,6 +37,11 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Mechanism;
 import frc.robot.Constants;
 
 public class Elevator extends SubsystemBase{
+
+    public enum LimitDirection{
+        UP,
+        DOWN
+    }
 
     private final SparkMax elevMotor;
     private final SparkFlexConfig elevConfig;
@@ -55,13 +63,20 @@ public class Elevator extends SubsystemBase{
     public final Command sysIdCommandDownDyn;
     public final Command sysIdCommandGroup;
 
+    public Angle lastElevatorPos;
+    
     public Elevator(int elevMotorID){
+        
         elevMotor = new SparkMax(elevMotorID, MotorType.kBrushless);
-        elevPID = new PIDController(0.5, 0, 0);
-        elevFF = new SimpleMotorFeedforward(0, 0, 0);
+        elevPID = new PIDController(0.014517, 0, 0);
+        elevFF = new SimpleMotorFeedforward(0.15215, 0.66776, 0.031198);
         relEncoder = elevMotor.getEncoder();
 
         elevConfig = new SparkFlexConfig();
+        elevConfig.idleMode(IdleMode.kCoast);
+        elevConfig.inverted(true);
+
+        elevMotor.configure(elevConfig, com.revrobotics.spark.SparkBase.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         // elevConfig.encoder
         //     .positionConversionFactor(Constants.elevatorScale)
         //     .velocityConversionFactor(Constants.elevatorScale / 60.0);
@@ -70,6 +85,8 @@ public class Elevator extends SubsystemBase{
         appliedCurrent = Amps.mutable(0);
         angle = Rotations.mutable(0);
         angularVelocity =  RotationsPerSecond.mutable(0);
+
+        setDefaultCommand(getHoldPosCmd());
 
         sysIdRoutine = new SysIdRoutine(
             new Config(
@@ -88,23 +105,27 @@ public class Elevator extends SubsystemBase{
         sysIdCommandDownDyn = sysIdRoutine.dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
 
         sysIdCommandGroup =  new SequentialCommandGroup(
+
+        
             new ParallelRaceGroup(
                 sysIdCommandUpQuasi,
-                getTopLimCommand()
+                getTopLimCommand(LimitDirection.UP)
             ),
             new ParallelRaceGroup(
                 sysIdCommandDownQuasi,
-                getBotLimitCommand()
+                getBotLimitCommand(LimitDirection.DOWN)
             ),
             new ParallelRaceGroup(
                 sysIdCommandUpDyn,
-                getTopLimCommand()
+                getTopLimCommand(LimitDirection.UP)
             ),
             new ParallelRaceGroup(
                 sysIdCommandDownDyn,
-                getBotLimitCommand()
+                getBotLimitCommand(LimitDirection.DOWN)
             )
         );
+
+        lastElevatorPos = Rotations.of(0);
     }
     public void setVoltage(Voltage voltage){
         elevMotor.setVoltage(voltage);
@@ -142,22 +163,29 @@ public class Elevator extends SubsystemBase{
         return Angle.ofBaseUnits(relEncoder.getPosition(), Rotations);
     }
 
-    public boolean getTopLimit(){
-        return getElevatorPos().gte(Constants.elevTopLim);
+    public boolean getTopLimit(LimitDirection direction){
+        return getElevatorPos().gte(Constants.elevTopLim) && direction.equals(LimitDirection.UP);
     }
 
-    public boolean getBotLimit(){
-        return Constants.elevBotLim.gte(getElevatorPos());
+    public boolean getBotLimit(LimitDirection direction){
+        return (Constants.elevBotLim.gte(getElevatorPos()) && direction.equals(LimitDirection.DOWN));
     }
 
-    public Command getTopLimCommand(){
-        return Commands.waitUntil(this::getTopLimit);
+    public LimitDirection getDirection(double value){
+        if (value >= 0){
+            return LimitDirection.UP;
+        }else{
+            return LimitDirection.DOWN;
+        }
     }
 
-    public Command getBotLimitCommand(){
-        return Commands.waitUntil(this::getBotLimit);
+    public Command getTopLimCommand(LimitDirection direction){
+        return Commands.waitUntil(() -> getTopLimit(direction));
     }
 
+    public Command getBotLimitCommand(LimitDirection direction){
+        return Commands.waitUntil(() -> getBotLimit(direction));
+    }
 
     public Voltage getElevVoltage(){
         return Voltage.ofBaseUnits(elevMotor.getAppliedOutput() * elevMotor.getBusVoltage(), Volts);
@@ -166,6 +194,7 @@ public class Elevator extends SubsystemBase{
     public Current getElevCurrent(){
         return Amps.of(elevMotor.getOutputCurrent());
     }
+
     
 
     private void sysIDLogging(SysIdRoutineLog log){
@@ -184,9 +213,24 @@ public class Elevator extends SubsystemBase{
 
 
     public Command getElevRateCmd(Supplier<AngularVelocity> rate){
+        LimitDirection direction = getDirection(rate.get().in(RotationsPerSecond));
+
         return this.runEnd(
             () -> setRate(rate.get()),
-            () -> setVoltage(Volts.zero()));
+            () -> setVoltage(Volts.zero())).unless(() -> getBotLimit(direction)).unless(() -> getTopLimit(direction)).finallyDo(() -> this.lastElevatorPos = getElevatorPos());
+    }
+
+    public Command getElevatorPosCmd(Supplier<Angle> position){
+        LimitDirection direction = getDirection(position.get().in(Rotations));
+
+        return this.runEnd(
+            () -> setElevatorPos(position.get()),
+            () -> setVoltage(Volts.zero())).unless(() -> getBotLimit(direction)).unless(() -> getTopLimit(direction)).finallyDo(() -> this.lastElevatorPos = getElevatorPos());
+    }
+
+
+    public Command getHoldPosCmd(){
+        return this.run(() -> setElevatorPos(this.lastElevatorPos));
     }
 
     public Command getSysIdCommandGroup(){
@@ -206,10 +250,9 @@ public class Elevator extends SubsystemBase{
         SmartDashboard.putNumber("In Voltage", elevMotor.getAppliedOutput());
         SmartDashboard.putString("Elev Command", getCommandString());
         SmartDashboard.putNumber("Elevator Rotations", getElevatorPos().in(Rotations));
-        SmartDashboard.putBoolean("Elev Top Lim Reached", getTopLimit());
-        SmartDashboard.putBoolean("Elev Bot Lim Reached", getBotLimit());
+        SmartDashboard.putBoolean("Elev Top Lim Reached", getTopLimit(LimitDirection.UP));
+        SmartDashboard.putBoolean("Elev Bot Lim Reached", getBotLimit(LimitDirection.DOWN));
+        SmartDashboard.putNumber("Elevator Rate", getRate().in(RotationsPerSecond));
     }
-
-    
 
 }

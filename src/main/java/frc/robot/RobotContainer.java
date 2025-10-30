@@ -6,6 +6,7 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Feet;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volt;
@@ -19,6 +20,7 @@ import edu.wpi.first.units.measure.MutAngularVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
@@ -82,11 +84,14 @@ public class RobotContainer {
         // Initialize auton chooser
         autonChooser = new SendableChooser<>();
         autonChooser.setDefaultOption("None", Commands.print("No autonomous command configured"));
-        autonChooser.addOption("Drive Forward", drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
-        autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
+        // autonChooser.addOption("Drive Forward", drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
+        // autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
+        autonChooser.addOption("Drive Forward Auto", getDriveForwardAuto());
         
         // Configure control bindings
         configureBindings();
+
+        SmartDashboard.putData("Auton Chooser", autonChooser);
     }
 
     /**
@@ -108,7 +113,7 @@ public class RobotContainer {
         operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-Constants.indexVolt), () -> Volt.of(Constants.indexVolt))
             .alongWith(intake.getIntakeCmd(() -> Volts.of(Constants.intakeVolt))));
 
-        operatorCtrl.rightBumper().whileTrue(indexer.getIndexCmd(() -> Volts.of(Constants.indexVolt))
+        operatorCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(Constants.topIntakeVolt), () -> Volts.of(-Constants.botIntakeVolt))
             .alongWith(intake.getIntakeCmd(() -> Volts.of(-Constants.intakeVolt)))); //Index Reverse
 
         operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
@@ -120,6 +125,11 @@ public class RobotContainer {
         operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
 
         operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
+
+        operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
+        operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
+        operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
+        operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
 
         // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
 
@@ -172,5 +182,15 @@ public class RobotContainer {
             drivetrain.getTurnTimeCmd(Seconds.of(3),  Volts.of(3)),
             drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
     }
+
+    private Command getDriveForwardAuto(){
+        return Commands.sequence(
+            Commands.race(
+                drivetrain.getDriveCmd(() -> Volts.of(-3), () -> Volts.of(-3)),
+                Commands.waitSeconds(1.5)
+                )
+        );
+    }
+
 
 }
