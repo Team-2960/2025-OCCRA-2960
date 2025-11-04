@@ -5,35 +5,30 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Feet;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volt;
 import static edu.wpi.first.units.Units.Volts;
 
-import java.io.PrintStream;
-
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.MutAngularVelocity;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.units.measure.MutVoltage;
-import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.ColorSensor;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.EndEffector;
 import frc.robot.subsystems.Indexer;
 import frc.robot.subsystems.Intake;
-import frc.robot.subsystems.Vision;
 
 public class RobotContainer {
+
+    private GenericEntry sb_matchTimer;
 
     private final Drivetrain drivetrain;
 
@@ -63,6 +58,15 @@ public class RobotContainer {
      * Sets up the robot
      */
     public RobotContainer() {
+
+        // Adding match timer printout TODO remove if this does not work
+        var match_info = Shuffleboard.getTab("Occra 2025")
+            .getLayout("Match Info", BuiltInLayouts.kList)
+            .withSize(2, 4);
+
+        sb_matchTimer = match_info.add("Match Timer", -1).getEntry();
+
+
         // Initialize Robot
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
@@ -186,7 +190,7 @@ public class RobotContainer {
     private Command getDriveForwardAuto(){
         return Commands.sequence(
             Commands.race(
-                drivetrain.getDriveCmd(() -> Volts.of(-3), () -> Volts.of(-3)),
+                drivetrain.getDriveCmd(() -> Volts.of(3), () -> Volts.of(3)),
                 Commands.waitSeconds(1.5)
                 )
         );

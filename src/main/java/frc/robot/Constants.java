@@ -37,7 +37,7 @@ public class Constants {
 
     // Motor Voltages
     public static final double driveVolt = 8;
-    public static final double intakeVolt = 5;
+    public static final double intakeVolt = 3;
     public static final double topIntakeVolt = 6;
     public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;

@@ -61,5 +61,9 @@
   "[java]": {
     "editor.insertSpaces": true,
     "editor.detectIndentation": false
-  }
+  },
+  "cSpell.words": [
+    "auton",
+    "Occra"
+  ]
 }
