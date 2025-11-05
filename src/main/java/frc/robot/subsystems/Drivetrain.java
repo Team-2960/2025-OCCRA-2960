@@ -4,20 +4,15 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.Supplier;
-import java.util.random.RandomGenerator.LeapableGenerator;
-
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
@@ -35,6 +30,36 @@ import frc.robot.util.BNO055.vector_type_t;
  * Manages the robot drivetrain Drivetrain
  */
 public class Drivetrain extends SubsystemBase {
+
+    public class DriveLDistanceCmd extends Command{
+
+        private Distance startDistance;
+        private Distance distance;
+        private Voltage volts;
+
+        public DriveLDistanceCmd(Voltage volts, Distance distance){
+            this.startDistance = getLeftDistance();
+            this.distance = distance;
+            this.volts = volts;
+        }
+
+        @Override
+        public void initialize(){
+            driveLMotor(volts);
+        }
+
+        @Override
+        public boolean isFinished(){
+            return (distance.in(Meters) == (getLeftDistance().in(Meters) - startDistance.in(Meters)));
+        }
+        
+        @Override 
+        public void end(boolean interrupted){
+            driveLMotor(Volts.zero());
+        }
+
+    }
+
 
     private final SparkMax lfMotor; // Left Front Drive Motor
     private final SparkMax lrMotor; // Left Rear Drive Motor
@@ -257,10 +282,13 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public Command getDriveLDistanceCmd(Voltage volts, Distance distance){
+        
         Distance startDistance = getLeftDistance();
-        return this.runEnd(() -> driveLMotor(volts), 
-            () -> driveLMotor(Volts.of(0)))
-            .until(() -> distance.equals(getLeftDistance().minus(startDistance)));
+
+        return this.runEnd(
+                () -> driveLMotor(volts), 
+                () -> driveLMotor(Volts.of(0)))
+            .until(() -> distance.in(Meters) == (getLeftDistance().in(Meters) - startDistance.in(Meters)));
     }
 
     @Override
