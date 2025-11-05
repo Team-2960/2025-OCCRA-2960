@@ -23,12 +23,12 @@ public class Constants {
     public static final double driveRatio = 1.0/7.31;
 
     // CAN IDs
-    public static final int lfDriveMotorID = 9;
-    public static final int lbDriveMotorID = 8;
-    public static final int rfDriveMotorID = 1;
-    public static final int rbDriveMotorID = 2;
+    public static final int lfDriveMotorID = 1; //9
+    public static final int lbDriveMotorID = 3; //8
+    public static final int rfDriveMotorID = 2; //1
+    public static final int rbDriveMotorID = 4; //2
 
-    public static final int lIntakeMotorID = 5;
+    public static final int lIntakeMotq2orID = 5;
     public static final int rIntakeMotorID = 7;
     public static final int elevatorMotorID = 10;
     public static final int topIndexerMotorID = 3;

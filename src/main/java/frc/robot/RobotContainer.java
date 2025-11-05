@@ -5,6 +5,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Feet;
+import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volt;
@@ -32,21 +33,21 @@ public class RobotContainer {
 
     private final Drivetrain drivetrain;
 
-    private final Elevator elevator;
+    // private final Elevator elevator;
 
-    private final Intake intake;
+    // private final Intake intake;
     
     //private final ColorSensor colorSensor;
 
     //private final Vision vision;
 
-    private final Indexer indexer;
+    // private final Indexer indexer;
 
-    private final EndEffector endEffector;
+    // private final EndEffector endEffector;
 
     private final CommandXboxController driverCtrl;
 
-    private final CommandXboxController operatorCtrl;
+    // private final CommandXboxController operatorCtrl;
 
     private final SendableChooser<Command> autonChooser;
 
@@ -71,19 +72,19 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
 
-        indexer = new Indexer(Constants.topIndexerMotorID, Constants.botIndexMotorID);
-        //colorSensor = new ColorSensor();
+        // indexer = new Indexer(Constants.topIndexerMotorID, Constants.botIndexMotorID);
+        // //colorSensor = new ColorSensor();
 
-        elevator = new Elevator(Constants.elevatorMotorID);
+        // elevator = new Elevator(Constants.elevatorMotorID);
 
-        intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
+        // intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
 
-        endEffector = new EndEffector(Constants.endEffectorMotorID);
+        // endEffector = new EndEffector(Constants.endEffectorMotorID);
         //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
-        operatorCtrl = new CommandXboxController(1);
+        // operatorCtrl = new CommandXboxController(1);
 
         // Initialize auton chooser
         autonChooser = new SendableChooser<>();
@@ -91,6 +92,7 @@ public class RobotContainer {
         // autonChooser.addOption("Drive Forward", drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
         // autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
         autonChooser.addOption("Drive Forward Auto", getDriveForwardAuto());
+        autonChooser.addOption("Test Left", drivetrain.getDriveLDistanceCmd(Volts.of(-3), Meter.of(0.5)));
         
         // Configure control bindings
         configureBindings();
@@ -114,26 +116,26 @@ public class RobotContainer {
         // driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
         // driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
 
-        operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-Constants.indexVolt), () -> Volt.of(Constants.indexVolt))
-            .alongWith(intake.getIntakeCmd(() -> Volts.of(Constants.intakeVolt))));
+        // operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-Constants.indexVolt), () -> Volt.of(Constants.indexVolt))
+        //     .alongWith(intake.getIntakeCmd(() -> Volts.of(Constants.intakeVolt))));
 
-        operatorCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(Constants.topIntakeVolt), () -> Volts.of(-Constants.botIntakeVolt))
-            .alongWith(intake.getIntakeCmd(() -> Volts.of(-Constants.intakeVolt)))); //Index Reverse
+        // operatorCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(Constants.topIntakeVolt), () -> Volts.of(-Constants.botIntakeVolt))
+        //     .alongWith(intake.getIntakeCmd(() -> Volts.of(-Constants.intakeVolt)))); //Index Reverse
 
-        operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
+        // operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
 
-        operatorCtrl.povLeft().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(3)));
+        // operatorCtrl.povLeft().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(3)));
 
-        operatorCtrl.povRight().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(3), () -> Volt.of(6)));
+        // operatorCtrl.povRight().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(3), () -> Volt.of(6)));
 
-        operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
+        // operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
 
-        operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
+        // operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
 
-        operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
-        operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
-        operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
-        operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
+        // operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
+        // operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
+        // operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
+        // operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
 
         // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
 
@@ -176,16 +178,6 @@ public class RobotContainer {
         return autonChooser.getSelected();
     }
 
-    /**
-     * Creates auton that drives forward, turns left, and then drives forward
-     * @return
-     */
-    private Command getDriveTurnDriveAuto() {
-        return Commands.sequence(
-            drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)),
-            drivetrain.getTurnTimeCmd(Seconds.of(3),  Volts.of(3)),
-            drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
-    }
 
     private Command getDriveForwardAuto(){
         return Commands.sequence(
