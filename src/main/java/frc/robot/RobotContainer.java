@@ -5,6 +5,8 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
@@ -85,6 +87,7 @@ public class RobotContainer {
         // autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
         autonChooser.addOption("Drive Forward Auto", getDriveForwardAuto());
         autonChooser.addOption("Test Left", drivetrain.getDriveLDistanceCmd(Volts.of(-3), Meter.of(0.5)));
+        autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
         
         // Configure control bindings
         configureBindings();
@@ -102,6 +105,16 @@ public class RobotContainer {
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
+
+        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
+        //     drivetrain.getDriveCmd(
+        //         () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+        //         () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
+        // ));
+
+
+        driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
+        driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
 
         //driverCtrl.axisGreaterThan(3, 0.1).whileTrue(elevator.getElevVoltCmd(() -> Volts.of(driverCtrl.getRightTriggerAxis() * 6)));
         

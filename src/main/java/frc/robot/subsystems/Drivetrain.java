@@ -4,8 +4,14 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.Supplier;
@@ -13,15 +19,34 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.MutAngle;
+import edu.wpi.first.units.measure.MutAngularVelocity;
+import edu.wpi.first.units.measure.MutCurrent;
+import edu.wpi.first.units.measure.MutLinearVelocity;
+import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Config;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Mechanism;
+import frc.robot.Constants;
+import frc.robot.subsystems.Elevator.LimitDirection;
 import frc.robot.util.BNO055;
 import frc.robot.util.BNO055.opmode_t;
 import frc.robot.util.BNO055.vector_type_t;
@@ -50,7 +75,7 @@ public class Drivetrain extends SubsystemBase {
 
         @Override
         public boolean isFinished(){
-            return (distance.in(Meters) == (getLeftDistance().in(Meters) - startDistance.in(Meters)));
+            return (distance.in(Meters) <= (getLeftDistance().in(Meters) - startDistance.in(Meters)));
         }
         
         @Override 
@@ -70,6 +95,27 @@ public class Drivetrain extends SubsystemBase {
     private final RelativeEncoder rEncoder; // Right Drive Encoder
     private final Distance wheelRadius;
     private final double driveRatio;
+
+    private final MutVoltage appliedVoltage;
+    private final MutCurrent appliedCurrent;
+    private final MutAngle angle;
+    private final MutLinearVelocity linearVelocity;
+
+    private final SysIdRoutine sysIdRoutine;
+
+    public final Command sysIdCommandUpQuasi;
+    public final Command sysIdCommandDownQuasi;
+    public final Command sysIdCommandUpDyn;
+    public final Command sysIdCommandDownDyn;
+    public final Command sysIdCommandGroup;
+
+    //Feedback Controller
+    private final PIDController drivePID;
+    private final SimpleMotorFeedforward driveFF;
+
+    private Distance startDistanceL = Meters.of(0);
+    private Distance startDistanceR = Meters.of(0);
+    
 
     private final BNO055 imu;
 
@@ -145,6 +191,40 @@ public class Drivetrain extends SubsystemBase {
         lEncoder.setPosition(0);
         rEncoder.setPosition(0);
 
+        //Feedback Controllers
+        drivePID = new PIDController(0.0041789, 0, 0);
+        driveFF = new SimpleMotorFeedforward(0.19004, 0.03103, 0.010066);
+
+        //System Identification
+        appliedVoltage = Volts.mutable(0);
+        appliedCurrent = Amps.mutable(0);
+        angle = Rotations.mutable(0);
+        linearVelocity =  MetersPerSecond.mutable(0);
+
+        sysIdRoutine = new SysIdRoutine(
+            new Config(
+                Volts.per(Second).of(.5),
+                Volts.of(2),
+                Seconds.of(4)
+            ), 
+            new Mechanism(
+                this::driveBMotor,
+                this::sysIDLogging, this)
+        );
+
+
+        sysIdCommandUpQuasi = sysIdRoutine.quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward);
+        sysIdCommandDownQuasi = sysIdRoutine.quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
+        sysIdCommandUpDyn = sysIdRoutine.dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward);
+        sysIdCommandDownDyn = sysIdRoutine.dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
+
+        sysIdCommandGroup =  new SequentialCommandGroup(
+            sysIdCommandUpQuasi,
+            sysIdCommandDownQuasi,
+            sysIdCommandUpDyn,
+            sysIdCommandDownDyn
+        );
+
     }
 
     /**
@@ -167,6 +247,62 @@ public class Drivetrain extends SubsystemBase {
     public void driveBMotor(Voltage voltage){
         lfMotor.setVoltage(voltage);
         rfMotor.setVoltage(voltage);
+    }
+
+    public void setLRate(LinearVelocity rate){
+        double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
+        double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
+
+        driveLMotor(Volts.of(pidVolt + ffVolt));
+    }
+
+    public void setRRate(LinearVelocity rate){
+        double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
+        double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
+
+        driveLMotor(Volts.of(pidVolt + ffVolt));
+    }
+
+    public void setRate(LinearVelocity left, LinearVelocity right){
+        setLRate(left);
+        setRRate(right);
+    }
+
+    public void setLPos(Distance targetPos) {
+        // Calculate trapezoidal profile
+        Distance currentPos = getLeftDistance();
+        LinearVelocity maxPosRate = Constants.maxDrivetrainSpeed;
+        Distance posError = targetPos.minus(currentPos);
+
+        LinearVelocity targetSpeed = maxPosRate.times((posError.in(Meters) > 0 ? 1 : -1));
+        //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
+        LinearVelocity rampDownSpeed = MetersPerSecond.of(posError.div(Constants.elevatorRampDownDist.times(maxPosRate)).magnitude());
+
+        if (Math.abs(rampDownSpeed.in(MetersPerSecond)) < Math.abs(targetSpeed.in(MetersPerSecond)))
+            targetSpeed = rampDownSpeed;
+        
+        setLRate(maxPosRate);
+    }
+
+    public void setRPos(Distance targetPos) {
+        // Calculate trapezoidal profile
+        Distance currentPos = getRightDistance();
+        LinearVelocity maxPosRate = Constants.maxDrivetrainSpeed;
+        Distance posError = targetPos.minus(currentPos);
+
+        LinearVelocity targetSpeed = maxPosRate.times((posError.in(Meters) > 0 ? 1 : -1));
+        //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
+        LinearVelocity rampDownSpeed = MetersPerSecond.of(posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude());
+
+        if (Math.abs(rampDownSpeed.in(MetersPerSecond)) < Math.abs(targetSpeed.in(MetersPerSecond)))
+            targetSpeed = rampDownSpeed;
+        
+        setRRate(maxPosRate);
+    }
+
+    public void setPos(Distance lTargetPos, Distance rTargetPos){
+        setLPos(lTargetPos);
+        setRPos(rTargetPos);
     }
 
     /**
@@ -194,10 +330,21 @@ public class Drivetrain extends SubsystemBase {
         return Meters.of(getRightRotations().in(Rotations) * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
+    /**
+     * Returns distance traveled calculated by the rotations, gear ratio, and the circumference(2*pi*r) of the wheel
+     * @return
+     */
     public Distance getLeftDistance(){
         return Meters.of(getLeftRotations().in(Rotations) * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
+    private void setStartDistanceL(Distance startDistance){
+        this.startDistanceL = startDistance;
+    }
+
+    private void setStartDistanceR(Distance startDistance){
+        this.startDistanceR = startDistance;
+    }
 
     public Rotation2d getRotation2d(){
         int times = (int) imu.getHeading()/180;
@@ -252,6 +399,31 @@ public class Drivetrain extends SubsystemBase {
             () -> driveBMotor(Volts.zero())
             );
     }
+
+    public Voltage getLVoltage(){
+        return Voltage.ofBaseUnits(lfMotor.getAppliedOutput() * lfMotor.getBusVoltage(), Volts);
+    }
+
+    public Current getLCurrent(){
+        return Amps.of(lfMotor.getOutputCurrent());
+    }
+
+    public LinearVelocity getLRate(){
+        return MetersPerSecond.of(lEncoder.getVelocity() * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+    }
+
+    public LinearVelocity getRRate(){
+        return MetersPerSecond.of(rEncoder.getVelocity() * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+    }
+
+
+    private void sysIDLogging(SysIdRoutineLog log){
+        log.motor("Drivetrain")
+            .voltage(getLVoltage())
+            .current(getLCurrent())
+            .linearVelocity(getLRate())
+            .linearPosition(getLeftDistance());
+    }
     /**
      * Generates a command to drive forward for a certain distance
      * 
@@ -282,14 +454,56 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public Command getDriveLDistanceCmd(Voltage volts, Distance distance){
-        
-        Distance startDistance = getLeftDistance();
-
-        return this.runEnd(
-                () -> driveLMotor(volts), 
-                () -> driveLMotor(Volts.of(0)))
-            .until(() -> distance.in(Meters) == (getLeftDistance().in(Meters) - startDistance.in(Meters)));
+    
+        return this.runOnce(() -> setStartDistanceL(getLeftDistance()))
+            .andThen(
+                this.runEnd(
+                    () -> driveLMotor(volts), 
+                    () -> driveLMotor(Volts.of(0))
+                )
+            )
+            .until(() -> distance.in(Meters) <= (getLeftDistance().in(Meters) - this.startDistanceL.in(Meters)));
     }
+
+    public Command getDriveRDistanceCmd(Voltage volts, Distance distance){
+    
+        return this.runOnce(() -> setStartDistanceL(getRightDistance()))
+            .andThen(
+                this.runEnd(
+                    () -> driveRMotor(volts), 
+                    () -> driveRMotor(Volts.of(0))
+                )
+            )
+            .until(() -> distance.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters)));
+    }
+
+    public Command getDriveRateCmd(LinearVelocity left, LinearVelocity right){
+        return this.runEnd(
+        () -> setRate(left, right),
+        () -> setDrive(Volts.zero(), Volts.zero()));
+    }
+
+    public Command getDrivePosCmd(Distance left, Distance right){
+        return this.runEnd(
+            () -> setPos(left, right), 
+            () -> driveBMotor(Volts.zero()));
+    }
+
+    public Command getSysIdCommandGroup(){
+        return sysIdCommandGroup;
+    }
+
+    public String getStringCommand(){
+        String commandName = "";
+        if (getCurrentCommand() == null){
+            commandName = "null";
+        } else{
+            commandName = getCurrentCommand().getName();
+        }
+        
+        return commandName;
+    }
+
 
     @Override
     public void periodic(){
@@ -298,5 +512,6 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("Left Encoder", lEncoder.getPosition());
         SmartDashboard.putNumber("Left Distance", getLeftDistance().in(Meters));
         SmartDashboard.putNumber("Right Distance", getRightDistance().in(Meters));
+        SmartDashboard.putString("Drivetrain Command", getStringCommand());
     }
 }

@@ -135,7 +135,7 @@ public class Elevator extends SubsystemBase{
     }
 
     public void setElevatorPos(Angle targetPos) {
-        
+
         // Calculate trapezoidal profile
         Angle currentPos = getElevatorPos();
         AngularVelocity maxPosRate = Constants.maxElevatorSpeed;
