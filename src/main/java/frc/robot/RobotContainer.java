@@ -102,15 +102,15 @@ public class RobotContainer {
         // Map Driver controls
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
-        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
-        //     drivetrain.getDriveCmd(
-        //         () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
-        //         () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
-        // ));
+        driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
+            drivetrain.getDriveCmd(
+                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
+        ));
 
 
         driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
