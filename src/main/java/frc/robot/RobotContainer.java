@@ -7,6 +7,7 @@ package frc.robot;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Volt;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.math.MathUtil;
@@ -20,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.EndEffector;
 
 public class RobotContainer {
 
@@ -37,7 +39,7 @@ public class RobotContainer {
 
     // private final Indexer indexer;
 
-    // private final EndEffector endEffector;
+    private final EndEffector endEffector;
 
     private final CommandXboxController driverCtrl;
 
@@ -73,7 +75,7 @@ public class RobotContainer {
 
         // intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
 
-        // endEffector = new EndEffector(Constants.endEffectorMotorID);
+        endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
         //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
@@ -112,6 +114,11 @@ public class RobotContainer {
         //         () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         // ));
 
+        driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
+        driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
+
+        driverCtrl.leftBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(3), () -> Volts.of(0)));
+        driverCtrl.rightBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(3)));
 
         driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));

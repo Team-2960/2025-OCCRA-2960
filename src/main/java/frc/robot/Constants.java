@@ -37,7 +37,8 @@ public class Constants {
     public static final int elevatorMotorID = 10;
     public static final int topIndexerMotorID = 3;
     public static final int botIndexMotorID = 4;
-    public static final int endEffectorMotorID = 6;
+    public static final int lEndEffectorMotorID = 1; //change later
+    public static final int rEndEffectorMotorID = 2; //change later
 
     // Motor Voltages
     public static final double driveVolt = 8;
@@ -45,6 +46,8 @@ public class Constants {
     public static final double topIntakeVolt = 6;
     public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;
+    public static final double rEndEffectorVolt = 3;
+    public static final double lEndEffectorVolt = 3;
 
     
 
