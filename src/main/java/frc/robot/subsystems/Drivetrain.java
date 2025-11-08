@@ -69,8 +69,7 @@ public class Drivetrain extends SubsystemBase {
         }
 
         @Override
-        public void initialize(){
-            driveLMotor(volts);
+        public void execute(){
         }
 
         @Override
@@ -192,8 +191,8 @@ public class Drivetrain extends SubsystemBase {
         rEncoder.setPosition(0);
 
         //Feedback Controllers
-        drivePID = new PIDController(0.0041789, 0, 0);
-        driveFF = new SimpleMotorFeedforward(0.19004, 0.03103, 0.010066);
+        drivePID = new PIDController(0.20798, 0, 0);
+        driveFF = new SimpleMotorFeedforward(0.17074, 1.9301, 0.55485);
 
         //System Identification
         appliedVoltage = Volts.mutable(0);
@@ -252,15 +251,14 @@ public class Drivetrain extends SubsystemBase {
     public void setLRate(LinearVelocity rate){
         double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
         double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
-
         driveLMotor(Volts.of(pidVolt + ffVolt));
     }
 
     public void setRRate(LinearVelocity rate){
-        double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
+        double pidVolt = drivePID.calculate(getRRate().in(MetersPerSecond));
         double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
 
-        driveLMotor(Volts.of(pidVolt + ffVolt));
+        driveRMotor(Volts.of(pidVolt + ffVolt));
     }
 
     public void setRate(LinearVelocity left, LinearVelocity right){
@@ -268,41 +266,34 @@ public class Drivetrain extends SubsystemBase {
         setRRate(right);
     }
 
-    public void setLPos(Distance targetPos) {
+    public void setLPos(Distance targetPos, Distance startPos) {
         // Calculate trapezoidal profile
-        Distance currentPos = getLeftDistance();
-        LinearVelocity maxPosRate = Constants.maxDrivetrainSpeed;
-        Distance posError = targetPos.minus(currentPos);
+        double maxPosRate = Constants.maxDrivetrainSpeed.in(MetersPerSecond);
+        Distance posError = targetPos.minus(getLeftDistance().minus(startPos));
 
-        LinearVelocity targetSpeed = maxPosRate.times((posError.in(Meters) > 0 ? 1 : -1));
+        double targetSpeed = maxPosRate * ((posError.in(Meters) > 0 ? 1 : -1));
         //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
-        LinearVelocity rampDownSpeed = MetersPerSecond.of(posError.div(Constants.elevatorRampDownDist.times(maxPosRate)).magnitude());
+        double rampDownSpeed = posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude();
 
-        if (Math.abs(rampDownSpeed.in(MetersPerSecond)) < Math.abs(targetSpeed.in(MetersPerSecond)))
+        if (Math.abs(rampDownSpeed) < Math.abs(targetSpeed))
             targetSpeed = rampDownSpeed;
         
-        setLRate(maxPosRate);
+        setLRate(MetersPerSecond.of(targetSpeed));
     }
 
-    public void setRPos(Distance targetPos) {
+    public void setRPos(Distance targetPos, Distance startPos) {
         // Calculate trapezoidal profile
-        Distance currentPos = getRightDistance();
-        LinearVelocity maxPosRate = Constants.maxDrivetrainSpeed;
-        Distance posError = targetPos.minus(currentPos);
+        double maxPosRate = Constants.maxDrivetrainSpeed.in(MetersPerSecond);
+        Distance posError = targetPos.minus(getRightDistance().minus(startPos));
 
-        LinearVelocity targetSpeed = maxPosRate.times((posError.in(Meters) > 0 ? 1 : -1));
+        double targetSpeed = maxPosRate * ((posError.in(Meters) > 0 ? 1 : -1));
         //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
-        LinearVelocity rampDownSpeed = MetersPerSecond.of(posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude());
+        double rampDownSpeed = posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude();
 
-        if (Math.abs(rampDownSpeed.in(MetersPerSecond)) < Math.abs(targetSpeed.in(MetersPerSecond)))
+        if (Math.abs(rampDownSpeed) < Math.abs(targetSpeed))
             targetSpeed = rampDownSpeed;
         
-        setRRate(maxPosRate);
-    }
-
-    public void setPos(Distance lTargetPos, Distance rTargetPos){
-        setLPos(lTargetPos);
-        setRPos(rTargetPos);
+        setRRate(MetersPerSecond.of(targetSpeed));
     }
 
     /**
@@ -319,11 +310,11 @@ public class Drivetrain extends SubsystemBase {
     // }
 
     public Angle getRightRotations(){
-        return Rotations.of(-rEncoder.getPosition());
+        return Rotations.of(rEncoder.getPosition());
     }
 
     public Angle getLeftRotations(){
-        return Rotations.of(-lEncoder.getPosition());
+        return Rotations.of(lEncoder.getPosition());
     }
 
     public Distance getRightDistance(){
@@ -409,11 +400,11 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public LinearVelocity getLRate(){
-        return MetersPerSecond.of(lEncoder.getVelocity() * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+        return MetersPerSecond.of(lEncoder.getVelocity()/60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
     public LinearVelocity getRRate(){
-        return MetersPerSecond.of(rEncoder.getVelocity() * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+        return MetersPerSecond.of(rEncoder.getVelocity()/60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
 
@@ -467,7 +458,7 @@ public class Drivetrain extends SubsystemBase {
 
     public Command getDriveRDistanceCmd(Voltage volts, Distance distance){
     
-        return this.runOnce(() -> setStartDistanceL(getRightDistance()))
+        return this.runOnce(() -> setStartDistanceR(getRightDistance()))
             .andThen(
                 this.runEnd(
                     () -> driveRMotor(volts), 
@@ -484,9 +475,15 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public Command getDrivePosCmd(Distance left, Distance right){
-        return this.runEnd(
-            () -> setPos(left, right), 
-            () -> driveBMotor(Volts.zero()));
+        return this.runOnce(() -> setStartDistanceR(getRightDistance()))
+            .andThen(this.runOnce(() -> setStartDistanceL(getLeftDistance())))
+            .andThen(
+                this.run(() -> {
+                    setLPos(left, this.startDistanceL);
+                    setRPos(right, this.startDistanceR);
+                })
+            );
+            
     }
 
     public Command getSysIdCommandGroup(){
