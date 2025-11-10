@@ -37,14 +37,6 @@ public class RobotContainer {
 
     private final Elevator elevator;
 
-    // private final Intake intake;
-    
-    //private final ColorSensor colorSensor;
-
-    //private final Vision vision;
-
-    // private final Indexer indexer;
-
     //private final EndEffector endEffector;
 
     private final CommandXboxController driverCtrl;
@@ -55,7 +47,6 @@ public class RobotContainer {
 
     private final MutVoltage leftCtrlVolt = Volts.mutable(0);
     private final MutVoltage rightCtrlVolt = Volts.mutable(0);
-    private final MutVoltage intakeCtrlVolt = Volts.mutable(0);
 
     /**
      * Sets up the robot
@@ -70,19 +61,11 @@ public class RobotContainer {
         sb_matchTimer = match_info.add("Match Timer", -1).getEntry();
 
 
-        // Initialize Robot
+        // Initialize Robot & set motor IDs
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
-
-        // indexer = new Indexer(Constants.topIndexerMotorID, Constants.botIndexMotorID);
-        // //colorSensor = new ColorSensor();
-
         elevator = new Elevator(Constants.elevatorMotorID);
-
-        // intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
-
         //endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
-        //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
@@ -105,16 +88,17 @@ public class RobotContainer {
     }
 
     /**
-     * Setup command triggers and bindings
+     * @return Setup command triggers and bindings
      */
     private void configureBindings() {
-        // Map Driver controls
+        // Maps default Driver controls
         drivetrain.setDefaultCommand(
             drivetrain.getDriveCmd(
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
+        // Maps override Driver controls
         driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
             drivetrain.getDriveCmd(
                 () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
@@ -130,74 +114,25 @@ public class RobotContainer {
         // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
 
-        //driverCtrl.axisGreaterThan(3, 0.1).whileTrue(elevator.getElevVoltCmd(() -> Volts.of(driverCtrl.getRightTriggerAxis() * 6)));
-        
-        // driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volt.of(6))); //Intake In
-        // driverCtrl.x().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(-6))); //Intake Out
+        driverCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8))); //Elevator to shelf 1
+        driverCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1))); //Elevator to shelf 2
+        driverCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7))); //Elevator to shelf 3
+        driverCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
 
-        // operatorCtrl.leftBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-Constants.indexVolt), () -> Volt.of(Constants.indexVolt))
-        //     .alongWith(intake.getIntakeCmd(() -> Volts.of(Constants.intakeVolt))));
-
-        // operatorCtrl.rightBumper().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(Constants.topIntakeVolt), () -> Volts.of(-Constants.botIntakeVolt))
-        //     .alongWith(intake.getIntakeCmd(() -> Volts.of(-Constants.intakeVolt)))); //Index Reverse
-
-        // operatorCtrl.povUp().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(6), () -> Volt.of(6))); //Index In
-
-        // operatorCtrl.povLeft().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(3)));
-
-        // operatorCtrl.povRight().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(3), () -> Volt.of(6)));
-
-        // operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(12)));
-
-        // operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
-
-        driverCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
-        driverCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
-        driverCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
-        driverCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
-
-        // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
-
-        // intake
-        // intake.setDefaultCommand(intake.getIntakeCmd(
-        //     () -> intakeCtrlVolt.mut_replace(MathUtil.applyDeadband(driverCtrl.getLeftTriggerAxis(), .1) * 12, Volts)
-        //  ));
-
-
-        // driverCtrl.y().whileTrue(elevator.getElevRateCmd(() -> AngularVelocity.ofBaseUnits(5, RotationsPerSecond))); //Elevator
-        // driverCtrl.leftBumper().whileTrue(intake.getIntakeCmd(() -> Volts.of(-8))); //Intake push out
-
-     /*/    driverCtrl.leftBumper()
-            .whileTrue(
-                new ParallelCommandGroup(
-                    intake.getIndIntakeCmd(() -> Volts.of(-6), () -> Volts.of(6)),
-                    indexer.getIntakeCmd(() -> Volts.of(6))
-            )
-        );
-
-        //INTAKE + INDEXER
-        driverCtrl.rightBumper()
-            .whileTrue(
-                new ParallelCommandGroup(
-                    intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volts.of(-6)),
-                    indexer.getIntakeCmd(() -> Volts.of(-6))
-            )
-        );
-
-        driverCtrl.y().whileTrue(intake.getIndIntakeCmd(() -> Volts.of(6), () -> Volt.of(6))); //INTAKE
-        /* */
     }
 
-
     /**
-     * Gets the currently selected auton
-     * @return
+     * 
+     * @return returns the auton chooser
      */
     public Command getAutonomousCommand() {
         return autonChooser.getSelected();
     }
 
-
+    /**
+     * 
+     * @return Auton to drive forwards for 1.5 seconds with a voltage of 3
+     */
     private Command getDriveForwardAuto(){
         return Commands.sequence(
             Commands.race(
