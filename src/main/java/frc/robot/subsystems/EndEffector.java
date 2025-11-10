@@ -30,8 +30,10 @@ import edu.wpi.first.units.measure.MutCurrent;
 import edu.wpi.first.units.measure.MutLinearVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -84,6 +86,7 @@ public class EndEffector extends SubsystemBase {
         rConfig.idleMode(IdleMode.kBrake);
 
         lConfig.inverted(true);
+        rConfig.inverted(false);
 
         lEndEffectorMotor.configure(lConfig, com.revrobotics.spark.SparkBase.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         rEndEffectorMotor.configure(rConfig, com.revrobotics.spark.SparkBase.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -95,7 +98,7 @@ public class EndEffector extends SubsystemBase {
         pidController = new PIDController(0.1, 0, 0);
         ffController = new SimpleMotorFeedforward(0.1, 0.08, 0.01);
 
-        setDefaultCommand(getHoldEndEffectorCmd());
+        setDefaultCommand(getTwitchEndEffectorCmd());
 
         //System Identification
         appliedVoltage = Volts.mutable(0);
@@ -183,13 +186,13 @@ public class EndEffector extends SubsystemBase {
     public void setRRate(AngularVelocity rate){
         double pid = pidController.calculate(getRRate().in(RotationsPerSecond), rate.in(RotationsPerSecond));
         double ff = ffController.calculate(rate.in(RotationsPerSecond));
-        setRVoltage(appliedVoltage);
+        setRVoltage(Volts.of(pid + ff));
     }
 
     public void setLRate(AngularVelocity rate){
         double pid = pidController.calculate(getLRate().in(RotationsPerSecond), rate.in(RotationsPerSecond));
         double ff = ffController.calculate(rate.in(RotationsPerSecond));
-        setLVoltage(appliedVoltage);
+        setLVoltage(Volts.of(pid + ff));
     }
 
     public void setLPos(Angle targetPos) {
@@ -258,9 +261,31 @@ public class EndEffector extends SubsystemBase {
                 }
                 )
             );
+
     } 
 
     public Command getHoldEndEffectorCmd(){
         return this.run(() -> {setRRate(RotationsPerSecond.zero()); setLRate(RotationsPerSecond.zero());});
+    }
+
+    public Command getTwitchEndEffectorCmd(){
+        Timer timer = new Timer();
+
+        return this.runOnce(() -> {
+            timer.reset();
+            timer.start();
+        }
+        ).andThen(
+            (this.runEnd(
+                () -> {
+                    setLVoltage(Volts.of(3));
+                    setRVoltage(Volts.of(3));
+                    },
+                () -> setVoltage(Volts.zero()))
+                .until(() -> timer.get() >= 0.3)
+                .andThen(Commands.waitSeconds(4))
+                ))
+        .repeatedly();
+        
     }
 }
