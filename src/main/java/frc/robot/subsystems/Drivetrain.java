@@ -15,13 +15,23 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.Supplier;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPLTVController;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -35,6 +45,9 @@ import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -114,9 +127,14 @@ public class Drivetrain extends SubsystemBase {
 
     private Distance startDistanceL = Meters.of(0);
     private Distance startDistanceR = Meters.of(0);
-    
 
     private final BNO055 imu;
+
+    private AnalogGyro gyro;
+
+    private final DifferentialDriveKinematics kinematics;
+    private final DifferentialDrivePoseEstimator poseEstimator;
+    private RobotConfig config;
 
     /**
      * Constructor
@@ -148,8 +166,11 @@ public class Drivetrain extends SubsystemBase {
 
         this.driveRatio = driveRatio;
 
-        imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS, vector_type_t.VECTOR_EULER);
+        imu = BNO055.getInstance(opmode_t.OPERATION_MODE_GYRONLY, vector_type_t.VECTOR_EULER);
+        // byte address = 0x29;
+        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS, vector_type_t.VECTOR_EULER, Port.kOnboard, address);       
         
+        gyro = new AnalogGyro(0);
 
         // Calculate the position conversion factor
         double distPerRev = wheelRadius.in(Meters) * Math.PI * driveRatio; // Distance traveled for one revolution of
@@ -224,6 +245,37 @@ public class Drivetrain extends SubsystemBase {
             sysIdCommandDownDyn
         );
 
+        kinematics = new DifferentialDriveKinematics(Constants.trackWidth.in(Meters));
+        poseEstimator = new DifferentialDrivePoseEstimator(kinematics, getRotation2d(), 0, 0, new Pose2d());
+
+        try{
+        config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+        // Handle exception as needed
+        e.printStackTrace();
+        }
+
+    // Configure AutoBuilder last
+        AutoBuilder.configure(
+            this::getPose, // Robot pose supplier
+            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+            new PPLTVController(0.02), // PPLTVController is the built in path following controller for differential drive trains
+            config, // The robot configuration
+            () -> {
+              // Boolean supplier that controls when the path will be mirrored for the red alliance
+              // This will flip the path being followed to the red side of the field.
+              // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+              var alliance = DriverStation.getAlliance();
+              if (alliance.isPresent()) {
+                return alliance.get() == DriverStation.Alliance.Red;
+              }
+              return false;
+            },
+            this // Reference to this subsystem to set requirements
+    );
     }
 
     /**
@@ -264,6 +316,14 @@ public class Drivetrain extends SubsystemBase {
     public void setRate(LinearVelocity left, LinearVelocity right){
         setLRate(left);
         setRRate(right);
+    }
+
+    public void driveRobotRelative(ChassisSpeeds chassisSpeeds){
+        double left = kinematics.toWheelSpeeds(chassisSpeeds).leftMetersPerSecond;
+        double right = kinematics.toWheelSpeeds(chassisSpeeds).rightMetersPerSecond;
+
+        setLRate(MetersPerSecond.of(left));
+        setRRate(MetersPerSecond.of(right));
     }
 
     public void setLPos(Distance targetPos, Distance startPos) {
@@ -329,6 +389,26 @@ public class Drivetrain extends SubsystemBase {
         return Meters.of(getLeftRotations().in(Rotations) * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
+    public Pose2d getPose(){
+        return poseEstimator.getEstimatedPosition();
+    }
+
+    public DifferentialDriveWheelPositions getDriveWheelPositions(){
+        return new DifferentialDriveWheelPositions(getLeftDistance(), getRightDistance());
+    }
+
+    public DifferentialDriveWheelSpeeds getDriveWheelSpeeds(){
+        return new DifferentialDriveWheelSpeeds(getLRate(), getRRate());
+    }
+
+    public ChassisSpeeds getChassisSpeeds(){
+        return kinematics.toChassisSpeeds(getDriveWheelSpeeds());
+    }
+
+    public void resetPose(Pose2d pose){
+        poseEstimator.resetPose(pose);
+    }
+
     private void setStartDistanceL(Distance startDistance){
         this.startDistanceL = startDistance;
     }
@@ -345,6 +425,13 @@ public class Drivetrain extends SubsystemBase {
         return Rotation2d.fromDegrees(newAngle);
     }
 
+    // public Rotation2d toRotation2d(double angle){
+    //     int times = (int) (angle/180);
+    //     int multiplier = (times % 2 == 1) ? 1 : 0;
+
+    //     return Rotation2d.fromDegrees(newAngle);
+    // }
+
     
 
 
@@ -356,7 +443,7 @@ public class Drivetrain extends SubsystemBase {
         rEncoder.setPosition(0);
     }
 
-
+ 
     /**
      * Drive command factory
      * @param left  left drive voltage supplier
@@ -504,8 +591,12 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic(){
-        SmartDashboard.putNumber("Rotation", getRotation2d().getDegrees());
-        SmartDashboard.putNumber("Raw Rotation", imu.getHeading());
+        poseEstimator.update(getRotation2d(), getDriveWheelPositions());
+
+        //SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
+        SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
+        SmartDashboard.putBoolean("Gyro Initialized", imu.isInitialized());
+        SmartDashboard.putBoolean("Gyro Present", imu.isSensorPresent());
         SmartDashboard.putNumber("Left Encoder", lEncoder.getPosition());
         SmartDashboard.putNumber("Left Distance", getLeftDistance().in(Meters));
         SmartDashboard.putNumber("Right Distance", getRightDistance().in(Meters));

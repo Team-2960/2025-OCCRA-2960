@@ -7,8 +7,12 @@ package frc.robot;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Rotation;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volt;
 import static edu.wpi.first.units.Units.Volts;
+
+import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.GenericEntry;
@@ -21,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.EndEffector;
 
 public class RobotContainer {
@@ -29,7 +34,7 @@ public class RobotContainer {
 
     private final Drivetrain drivetrain;
 
-    // private final Elevator elevator;
+    private final Elevator elevator;
 
     // private final Intake intake;
     
@@ -39,7 +44,7 @@ public class RobotContainer {
 
     // private final Indexer indexer;
 
-    private final EndEffector endEffector;
+    //private final EndEffector endEffector;
 
     private final CommandXboxController driverCtrl;
 
@@ -71,11 +76,11 @@ public class RobotContainer {
         // indexer = new Indexer(Constants.topIndexerMotorID, Constants.botIndexMotorID);
         // //colorSensor = new ColorSensor();
 
-        // elevator = new Elevator(Constants.elevatorMotorID);
+        elevator = new Elevator(Constants.elevatorMotorID);
 
         // intake = new Intake(Constants.lIntakeMotorID, Constants.rIntakeMotorID);
 
-        endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
+        //endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
         //vision = new Vision("Microsoft_LifeCam_HD-3000");
 
         // Initialize Controls
@@ -83,7 +88,7 @@ public class RobotContainer {
         // operatorCtrl = new CommandXboxController(1);
 
         // Initialize auton chooser
-        autonChooser = new SendableChooser<>();
+        autonChooser = AutoBuilder.buildAutoChooser();
         autonChooser.setDefaultOption("None", Commands.print("No autonomous command configured"));
         // autonChooser.addOption("Drive Forward", drivetrain.getDriveDistCmd(Feet.of(3),  Volts.of(6)));
         // autonChooser.addOption("Drive-Turn-Drive", getDriveTurnDriveAuto());
@@ -114,14 +119,14 @@ public class RobotContainer {
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
-        driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
-        driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
+        // driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
+        // driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
 
-        driverCtrl.leftBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(3), () -> Volts.of(0)));
-        driverCtrl.rightBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(3)));
+        // driverCtrl.leftBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(3), () -> Volts.of(0)));
+        // driverCtrl.rightBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(3)));
 
-        driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
-        driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
+        // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
+        // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
 
         //driverCtrl.axisGreaterThan(3, 0.1).whileTrue(elevator.getElevVoltCmd(() -> Volts.of(driverCtrl.getRightTriggerAxis() * 6)));
         
@@ -144,10 +149,10 @@ public class RobotContainer {
 
         // operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getEndEffectorCmd(() -> Volts.of(-12)));
 
-        // operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
-        // operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
-        // operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
-        // operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
+        driverCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8)));
+        driverCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1)));
+        driverCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7)));
+        driverCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0)));
 
         // driverCtrl.b().whileTrue(indexer.getIndIndexCmd(() -> Volts.of(-6), () -> Volt.of(0))); //Index Out
 

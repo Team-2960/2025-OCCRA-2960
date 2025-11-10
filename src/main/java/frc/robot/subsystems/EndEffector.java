@@ -22,8 +22,6 @@ public class EndEffector extends SubsystemBase {
         
         lEndEffectorMotor = new SparkMax(lEndEffectorMotorID, MotorType.kBrushless);
         rEndEffectorMotor = new SparkMax(rEndEffectorMotorID, MotorType.kBrushless);
-
-
     }
 
     public void setVoltage(Voltage voltage) {

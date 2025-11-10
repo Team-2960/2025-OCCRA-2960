@@ -25,20 +25,21 @@ public class Constants {
     public static final double driveRatio = 1.0/7.31;
     public static final LinearVelocity maxDrivetrainSpeed = MetersPerSecond.of(3);
     public static final Distance driveRampDownDist = Meters.of(0.2);
+    public static final Distance trackWidth = Inches.of(21.9375);
 
     // CAN IDs
     public static final int lfDriveMotorID = 1; //9
-    public static final int lbDriveMotorID = 3; //8
-    public static final int rfDriveMotorID = 2; //1
-    public static final int rbDriveMotorID = 4; //2
+    public static final int lbDriveMotorID = 2; //8
+    public static final int rfDriveMotorID = 4; //1
+    public static final int rbDriveMotorID = 3; //2
 
     public static final int lIntakeMotq2orID = 5;
-    public static final int rIntakeMotorID = 7;
-    public static final int elevatorMotorID = 10;
-    public static final int topIndexerMotorID = 3;
-    public static final int botIndexMotorID = 4;
-    public static final int lEndEffectorMotorID = 1; //change later
-    public static final int rEndEffectorMotorID = 2; //change later
+    // public static final int rIntakeMotorID = 6;
+    public static final int elevatorMotorID = 7;
+    // public static final int topIndexerMotorID = 3;
+    // public static final int botIndexMotorID = 4;
+    public static final int lEndEffectorMotorID = 5; //change later
+    public static final int rEndEffectorMotorID = 6; //change later
 
     // Motor Voltages
     public static final double driveVolt = 8;
