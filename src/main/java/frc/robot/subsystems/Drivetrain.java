@@ -5,6 +5,8 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degree;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -124,6 +126,7 @@ public class Drivetrain extends SubsystemBase {
     //Feedback Controller
     private final PIDController drivePID;
     private final SimpleMotorFeedforward driveFF;
+    private final PIDController anglePID;
 
     private Distance startDistanceL = Meters.of(0);
     private Distance startDistanceR = Meters.of(0);
@@ -214,6 +217,11 @@ public class Drivetrain extends SubsystemBase {
         //Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
         driveFF = new SimpleMotorFeedforward(0.17074, 1.9301, 0.55485);
+        anglePID = new PIDController(0, 0, 0);
+
+        anglePID.enableContinuousInput(-180, 180);
+
+        anglePID.setTolerance(1);
 
         //System Identification
         appliedVoltage = Volts.mutable(0);
@@ -425,15 +433,23 @@ public class Drivetrain extends SubsystemBase {
         return Rotation2d.fromDegrees(newAngle);
     }
 
-    // public Rotation2d toRotation2d(double angle){
-    //     int times = (int) (angle/180);
-    //     int multiplier = (times % 2 == 1) ? 1 : 0;
+    public Rotation2d toRotation2d(double angle){
+        angle %= 360;
 
-    //     return Rotation2d.fromDegrees(newAngle);
-    // }
+        if (angle >= 180.0)
+            angle -= 360.0;
+        else if (angle < -180.0)
+            angle += 360.0;
+
+        return Rotation2d.fromDegrees(angle);
+    }
 
     
+    public void setAngle(Angle tarAngle){
+        double rate = anglePID.calculate(getRotation2d().getDegrees(), tarAngle.in(Degrees));
 
+        setRate(MetersPerSecond.of(rate), MetersPerSecond.of(-rate));
+    }
 
     /**
      * Resets the drive distance to zero
@@ -555,6 +571,24 @@ public class Drivetrain extends SubsystemBase {
             .until(() -> distance.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters)));
     }
 
+    public Command getDriveDistanceCmd(Voltage volts, Distance left, Distance right){
+        return this.runOnce(() -> {
+                setStartDistanceR(getRightDistance());
+                setStartDistanceL(getLeftDistance());
+            })
+            .andThen(
+                this.runEnd(
+                    () -> {
+                        setDrive(volts, volts);
+                    }, 
+                    () -> driveRMotor(Volts.of(0))
+                )
+                .until(
+                    () -> right.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters))
+                        && left.in(Meters) <= (getLeftDistance().in(Meters) - this.startDistanceL.in(Meters)))
+            );
+    }
+
     public Command getDriveRateCmd(LinearVelocity left, LinearVelocity right){
         return this.runEnd(
         () -> setRate(left, right),
@@ -569,8 +603,18 @@ public class Drivetrain extends SubsystemBase {
                     setLPos(left, this.startDistanceL);
                     setRPos(right, this.startDistanceR);
                 })
+                .until(
+                    () -> left.isNear(getLeftDistance().minus(this.startDistanceL), Meters.of(0.01)) 
+                        && right.isNear(getLeftDistance().minus(this.startDistanceR), Meters.of(0.01)))
             );
             
+    }
+
+    public Command getDriveToAngleCmd(Angle angle){
+        return this.runEnd(
+            () -> setAngle(angle), 
+            () -> setDrive(Volts.zero(), Volts.zero())
+        );
     }
 
     public Command getSysIdCommandGroup(){
@@ -593,7 +637,7 @@ public class Drivetrain extends SubsystemBase {
     public void periodic(){
         poseEstimator.update(getRotation2d(), getDriveWheelPositions());
 
-        //SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
+        SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
         SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
         SmartDashboard.putBoolean("Gyro Initialized", imu.isInitialized());
         SmartDashboard.putBoolean("Gyro Present", imu.isSensorPresent());
@@ -601,5 +645,6 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putNumber("Left Distance", getLeftDistance().in(Meters));
         SmartDashboard.putNumber("Right Distance", getRightDistance().in(Meters));
         SmartDashboard.putString("Drivetrain Command", getStringCommand());
+        SmartDashboard.putNumber("Drivetrain Rate", getRRate().in(MetersPerSecond));
     }
 }

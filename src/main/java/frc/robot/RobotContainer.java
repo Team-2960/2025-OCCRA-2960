@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volt;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -95,6 +96,7 @@ public class RobotContainer {
         autonChooser.addOption("Drive Forward Auto", getDriveForwardAuto());
         autonChooser.addOption("Test Left", drivetrain.getDriveLDistanceCmd(Volts.of(-3), Meter.of(0.5)));
         autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
+        autonChooser.addOption("Test Auton", getTestAuto());
         
         // Configure control bindings
         configureBindings();
@@ -202,6 +204,12 @@ public class RobotContainer {
                 drivetrain.getDriveCmd(() -> Volts.of(3), () -> Volts.of(3)),
                 Commands.waitSeconds(1.5)
                 )
+        );
+    }
+
+    private Command getTestAuto(){
+        return Commands.sequence(
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(3.5), Meters.of(3.5))
         );
     }
 

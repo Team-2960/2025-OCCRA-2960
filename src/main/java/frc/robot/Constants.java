@@ -28,10 +28,10 @@ public class Constants {
     public static final Distance trackWidth = Inches.of(21.9375);
 
     // CAN IDs
-    public static final int lfDriveMotorID = 1; //9
-    public static final int lbDriveMotorID = 2; //8
-    public static final int rfDriveMotorID = 4; //1
-    public static final int rbDriveMotorID = 3; //2
+    public static final int lfDriveMotorID = 1; //1
+    public static final int lbDriveMotorID = 3; //2
+    public static final int rfDriveMotorID = 2; //4
+    public static final int rbDriveMotorID = 4; //3
 
     public static final int lIntakeMotq2orID = 5;
     // public static final int rIntakeMotorID = 6;
