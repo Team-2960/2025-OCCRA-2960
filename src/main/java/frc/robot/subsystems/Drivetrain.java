@@ -133,7 +133,7 @@ public class Drivetrain extends SubsystemBase {
 
     private final BNO055 imu;
 
-    private AnalogGyro gyro;
+    // private AnalogGyro gyro;
 
     private final DifferentialDriveKinematics kinematics;
     private final DifferentialDrivePoseEstimator poseEstimator;
@@ -173,7 +173,7 @@ public class Drivetrain extends SubsystemBase {
         // byte address = 0x29;
         // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS, vector_type_t.VECTOR_EULER, Port.kOnboard, address);       
         
-        gyro = new AnalogGyro(0);
+        // gyro = new AnalogGyro(0);
 
         // Calculate the position conversion factor
         double distPerRev = wheelRadius.in(Meters) * Math.PI * driveRatio; // Distance traveled for one revolution of
@@ -637,8 +637,8 @@ public class Drivetrain extends SubsystemBase {
     public void periodic(){
         poseEstimator.update(getRotation2d(), getDriveWheelPositions());
 
-        SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
-        SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
+       // SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
+        //SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
         SmartDashboard.putBoolean("Gyro Initialized", imu.isInitialized());
         SmartDashboard.putBoolean("Gyro Present", imu.isSensorPresent());
         SmartDashboard.putNumber("Left Encoder", lEncoder.getPosition());

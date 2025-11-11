@@ -37,7 +37,7 @@ public class RobotContainer {
 
     private final Elevator elevator;
 
-    //private final EndEffector endEffector;
+    private final EndEffector endEffector;
 
     private final CommandXboxController driverCtrl;
 
@@ -65,7 +65,8 @@ public class RobotContainer {
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
         elevator = new Elevator(Constants.elevatorMotorID);
-        //endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
+        
+        endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
@@ -80,6 +81,7 @@ public class RobotContainer {
         autonChooser.addOption("Test Left", drivetrain.getDriveLDistanceCmd(Volts.of(-3), Meter.of(0.5)));
         autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
         autonChooser.addOption("Test Auton", getTestAuto());
+        autonChooser.addOption("End Effector SysID", endEffector.sysIdCommandGroup);
         
         // Configure control bindings
         configureBindings();
@@ -105,11 +107,11 @@ public class RobotContainer {
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
-        // driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
-        // driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
+        driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
+        driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
 
-        // driverCtrl.leftBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(3), () -> Volts.of(0)));
-        // driverCtrl.rightBumper().onTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(3)));
+        driverCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-3), () -> Volts.of(0)));
+        driverCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(-3)));
 
         // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));

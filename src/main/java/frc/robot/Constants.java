@@ -28,18 +28,18 @@ public class Constants {
     public static final Distance trackWidth = Inches.of(21.9375);
 
     // CAN IDs
-    public static final int lfDriveMotorID = 1; //1
-    public static final int lbDriveMotorID = 3; //2
-    public static final int rfDriveMotorID = 2; //4
-    public static final int rbDriveMotorID = 4; //3
+    public static final int lfDriveMotorID = 1;
+    public static final int lbDriveMotorID = 2;
+    public static final int rfDriveMotorID = 4;
+    public static final int rbDriveMotorID = 3;
 
     public static final int lIntakeMotq2orID = 5;
     // public static final int rIntakeMotorID = 6;
     public static final int elevatorMotorID = 7;
     // public static final int topIndexerMotorID = 3;
     // public static final int botIndexMotorID = 4;
-    public static final int lEndEffectorMotorID = 5; //change later
-    public static final int rEndEffectorMotorID = 6; //change later
+    public static final int lEndEffectorMotorID = 5;
+    public static final int rEndEffectorMotorID = 6;
 
     // Motor Voltages
     public static final double driveVolt = 8;
@@ -47,8 +47,8 @@ public class Constants {
     public static final double topIntakeVolt = 6;
     public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;
-    public static final double rEndEffectorVolt = 3;
-    public static final double lEndEffectorVolt = 3;
+    public static final double rEndEffectorVolt = 6;
+    public static final double lEndEffectorVolt = 6;
 
     
 
