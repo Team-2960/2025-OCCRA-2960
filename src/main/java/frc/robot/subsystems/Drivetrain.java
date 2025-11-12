@@ -24,6 +24,8 @@ import com.pathplanner.lib.controllers.PPLTVController;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.studica.frc.AHRS;
+import com.studica.frc.AHRS.NavXComType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -133,9 +135,10 @@ public class Drivetrain extends SubsystemBase {
 
     private Distance startDistanceL = Meters.of(0);
     private Distance startDistanceR = Meters.of(0);
+    private Angle startAngle = Rotations.zero();
 
-    private final BNO055 imu;
-
+    
+    private AHRS navx;
     // private AnalogGyro gyro;
 
     private final DifferentialDriveKinematics kinematics;
@@ -172,11 +175,14 @@ public class Drivetrain extends SubsystemBase {
 
         this.driveRatio = driveRatio;
 
-        imu = BNO055.getInstance(opmode_t.OPERATION_MODE_GYRONLY, vector_type_t.VECTOR_EULER);
+        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_GYRONLY, vector_type_t.VECTOR_EULER);
         // byte address = 0x29;
         // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS, vector_type_t.VECTOR_EULER, Port.kOnboard, address);       
         
         // gyro = new AnalogGyro(0);
+
+        navx = new AHRS(NavXComType.kMXP_SPI);
+        navx.resetDisplacement();
 
         // Calculate the position conversion factor
         double distPerRev = wheelRadius.in(Meters) * Math.PI * driveRatio; // Distance traveled for one revolution of
@@ -219,6 +225,7 @@ public class Drivetrain extends SubsystemBase {
 
         //Set up differential drive class
         diffDrive = new DifferentialDrive(lfMotor, rfMotor);
+        diffDrive.setSafetyEnabled(false);
 
         //Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
@@ -275,7 +282,7 @@ public class Drivetrain extends SubsystemBase {
             this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
             this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
             (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-            new PPLTVController(0.02), // PPLTVController is the built in path following controller for differential drive trains
+            new PPLTVController(0.01), // PPLTVController is the built in path following controller for differential drive trains
             config, // The robot configuration
             () -> {
               // Boolean supplier that controls when the path will be mirrored for the red alliance
@@ -334,10 +341,18 @@ public class Drivetrain extends SubsystemBase {
     
     public void setTankDrive(double leftStick, double rightStick){
         diffDrive.tankDrive(leftStick, rightStick);
+        diffDrive.feed();
     }
 
     private void setArcadeDrive(double leftStick, double rightStick){
         diffDrive.arcadeDrive(leftStick, rightStick);
+    }
+
+    public void arcadeDrive(double leftJoy, double rightJoy){
+        double leftCalc = Math.max(Math.min(leftJoy - rightJoy, 1), -1);
+        double rightCalc = Math.max(Math.min(leftJoy + rightJoy, 1), -1);
+
+        setDrive(Volts.of(leftCalc * 12), Volts.of(rightCalc * 12));
     }
 
     public void driveRobotRelative(ChassisSpeeds chassisSpeeds){
@@ -439,23 +454,35 @@ public class Drivetrain extends SubsystemBase {
         this.startDistanceR = startDistance;
     }
 
-    public Rotation2d getRotation2d(){
-        int times = (int) imu.getHeading()/180;
-        int multiplier = (times%2 == 1) ? 1 : 0;
-        double newAngle = imu.getHeading() - (180 * times) - (180 * multiplier);
-
-        return Rotation2d.fromDegrees(newAngle);
+    public void setStartAngle(Angle startAngle){
+        this.startAngle = startAngle;
     }
 
-    public Rotation2d toRotation2d(double angle){
-        angle %= 360;
+    // public Rotation2d getRotation2d(){
+    //     int times = (int) imu.getHeading()/180;
+    //     int multiplier = (times%2 == 1) ? 1 : 0;
+    //     double newAngle = imu.getHeading() - (180 * times) - (180 * multiplier);
 
-        if (angle >= 180.0)
-            angle -= 360.0;
-        else if (angle < -180.0)
-            angle += 360.0;
+    //     return Rotation2d.fromDegrees(newAngle);
+    // }
 
-        return Rotation2d.fromDegrees(angle);
+    public Rotation2d getRotation2d(){
+        return navx.getRotation2d();
+    }
+
+    public Rotation2d wrapAngle(Rotation2d angle){
+        double magnitude = angle.getDegrees() % 360;
+
+        if (magnitude >= 180.0)
+            magnitude -= 360.0;
+        else if (magnitude < -180.0)
+            magnitude += 360.0;
+
+        return Rotation2d.fromDegrees(magnitude);
+    }
+
+    public Rotation2d getWrappedAngle(){
+        return wrapAngle(getRotation2d());
     }
 
     
@@ -515,9 +542,16 @@ public class Drivetrain extends SubsystemBase {
         );
     }
 
+    // public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
+    //     return this.runEnd(
+    //         () -> setArcadeDrive(leftStick.get(), rightStick.get()), 
+    //         () -> setDrive(Volts.zero(), Volts.zero())
+    //     );
+    // }
+
     public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
         return this.runEnd(
-            () -> setArcadeDrive(leftStick.get(), rightStick.get()), 
+            () -> arcadeDrive(leftStick.get(), rightStick.get()), 
             () -> setDrive(Volts.zero(), Volts.zero())
         );
     }
@@ -639,7 +673,7 @@ public class Drivetrain extends SubsystemBase {
             
     }
 
-    public Command getDriveToAngleCmd(Angle angle){
+    public Command getDriveToAnglePIDCmd(Angle angle){
         return this.runEnd(
             () -> setAngle(angle), 
             () -> setDrive(Volts.zero(), Volts.zero())
@@ -664,12 +698,11 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic(){
-        poseEstimator.update(getRotation2d(), getDriveWheelPositions());
+        poseEstimator.update(getWrappedAngle(), getDriveWheelPositions());
 
        // SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
         //SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
-        SmartDashboard.putBoolean("Gyro Initialized", imu.isInitialized());
-        SmartDashboard.putBoolean("Gyro Present", imu.isSensorPresent());
+        SmartDashboard.putNumber("Gyro Heading", wrapAngle(getRotation2d()).getDegrees());
         SmartDashboard.putNumber("Left Encoder", lEncoder.getPosition());
         SmartDashboard.putNumber("Left Distance", getLeftDistance().in(Meters));
         SmartDashboard.putNumber("Right Distance", getRightDistance().in(Meters));

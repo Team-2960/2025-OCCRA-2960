@@ -29,8 +29,11 @@ import edu.wpi.first.units.measure.MutAngle;
 import edu.wpi.first.units.measure.MutCurrent;
 import edu.wpi.first.units.measure.MutLinearVelocity;
 import edu.wpi.first.units.measure.MutVoltage;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -52,6 +55,8 @@ public class EndEffector extends SubsystemBase {
 
     private final RelativeEncoder lEncoder;
     private final RelativeEncoder rEncoder;
+
+    private final DigitalInput limitSwitch;
 
     private final MutVoltage appliedVoltage;
     private final MutCurrent appliedCurrent;
@@ -94,6 +99,8 @@ public class EndEffector extends SubsystemBase {
 
         lEncoder = lEndEffectorMotor.getEncoder();
         rEncoder = rEndEffectorMotor.getEncoder();
+
+        limitSwitch = new DigitalInput(0);
 
         pidController = new PIDController(0.1, 0, 0);
         ffController = new SimpleMotorFeedforward(0.1, 0.08, 0.01);
@@ -175,6 +182,10 @@ public class EndEffector extends SubsystemBase {
         return Rotations.of(rEncoder.getPosition());
     }
 
+    public boolean getLimit(){
+        return limitSwitch.get();
+    }
+
     public void setStartPosL(Angle startPos){
         this.startPosL = startPos;
     }
@@ -253,7 +264,8 @@ public class EndEffector extends SubsystemBase {
         return this.runOnce(() -> {
                 setStartPosR(getRPos()); 
                 setStartPosL(getLPos());
-            }).andThen(this.runEnd(
+            })
+            .andThen(this.runEnd(
                 () -> setVoltage(lVoltage.get(), rVoltage.get()),
                 () -> {
                     setRPos(this.startPosR);
@@ -262,7 +274,30 @@ public class EndEffector extends SubsystemBase {
                 )
             );
 
-    } 
+    }
+
+    public Command getIntakeCmd(){
+        return this.runOnce(() -> {
+            setStartPosR(getRPos()); 
+            setStartPosL(getLPos());
+        })
+        .andThen(this.runEnd(
+            () -> setVoltage(Constants.lEndEffectorVolt, Constants.rEndEffectorVolt),
+            () -> {
+                setRPos(this.startPosR);
+                setLPos(this.startPosL);
+            }
+            )
+        )
+        .until(() -> getLimit())n
+    }
+    
+    public Command getScoreCmd(){
+        return this.runEnd(
+            () -> setVoltage(Constants.lEndEffectorVolt.times(-1)), 
+            () -> setVoltage(Volts.zero())
+        );
+    }
 
     public Command getHoldEndEffectorCmd(){
         return this.run(() -> {setRRate(RotationsPerSecond.zero()); setLRate(RotationsPerSecond.zero());});
@@ -287,5 +322,10 @@ public class EndEffector extends SubsystemBase {
                 ))
         .repeatedly();
         
+    }
+
+    @Override
+    public void periodic(){
+        SmartDashboard.putBoolean("End Effector limit", limitSwitch.get());
     }
 }

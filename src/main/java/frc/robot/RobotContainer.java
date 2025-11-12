@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -66,6 +67,7 @@ public class RobotContainer {
         // Initialize Robot & set motor IDs
         drivetrain = new Drivetrain(Constants.lfDriveMotorID, Constants.lbDriveMotorID, Constants.rfDriveMotorID,
                 Constants.rbDriveMotorID, Constants.driveRatio, Constants.wheelDiameter);
+        
         elevator = new Elevator(Constants.elevatorMotorID);
         
         endEffector = new EndEffector(Constants.lEndEffectorMotorID, Constants.rEndEffectorMotorID);
@@ -84,6 +86,7 @@ public class RobotContainer {
         autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
         autonChooser.addOption("Test Auton", getTestAuto());
         autonChooser.addOption("End Effector SysID", endEffector.sysIdCommandGroup);
+        autonChooser.addOption("One Block Auto", getOneBlockAuto());
         
         // Configure control bindings
         configureBindings();
@@ -95,32 +98,34 @@ public class RobotContainer {
      * @return Setup command triggers and bindings
      */
     private void configureBindings() {
-        // Maps default Driver controls
-        drivetrain.setDefaultCommand(
-            drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
-        ));
+        // // Maps default Driver controls
+        // drivetrain.setDefaultCommand(
+        //     drivetrain.getDriveCmd(
+        //         () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+        //         () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
+        // ));
 
-        // Maps override Driver controls
-        driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
-            drivetrain.getDriveCmd(
-                () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
-                () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
-        ));
+        // // Maps override Driver controls
+        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1).onTrue(
+        //     drivetrain.getDriveCmd(
+        //         () -> leftCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getLeftY(), .1) * Constants.driveVolt, Volts), 
+        //         () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
+        // ));
 
         // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1)
         //     .onTrue(
         //         drivetrain.getTankDriveCmd(() -> driverCtrl.getLeftY(), () -> driverCtrl.getRightY())
         // );
 
-        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightX()) >= 0.1)
-        //     .onTrue(
-        //         drivetrain.getArcadeDriveCmd(() -> driverCtrl.getLeftY(), () -> driverCtrl.getRightX())
-        // );
+        driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightX()) >= 0.1)
+            .onTrue(
+                drivetrain.getArcadeDriveCmd(() -> -MathUtil.applyDeadband(driverCtrl.getLeftY(), 0.1), () -> -MathUtil.applyDeadband(driverCtrl.getRightX(), 0.1))
+        );
 
-        operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
-        operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
+        drivetrain.setDefaultCommand(drivetrain.getArcadeDriveCmd(() -> -MathUtil.applyDeadband(driverCtrl.getLeftY(), 0.1), () -> -MathUtil.applyDeadband(driverCtrl.getRightX(), 0.1)));
+
+        operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIntakeCmd());
+        operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Constants.lEndEffectorVolt.times(-1), () -> Constants.rEndEffectorVolt.times(-1)));
 
         operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-3), () -> Volts.of(0)));
         operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(-3)));
@@ -164,6 +169,27 @@ public class RobotContainer {
     private Command getTestAuto(){
         return Commands.sequence(
             drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(3.5), Meters.of(3.5))
+        );
+    }
+
+    private Command getOneBlockAuto(){
+        return Commands.sequence(
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(4.5), Meters.of(4.5)),
+                endEffector.getIntakeCmd()
+            ),
+            Commands.race(
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(120)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(0.5), Meters.of(0.5)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+            ),
+            Commands.deadline(Commands.waitSeconds(3), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd()
+            )
         );
     }
 

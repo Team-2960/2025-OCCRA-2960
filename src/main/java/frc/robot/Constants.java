@@ -5,11 +5,13 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Voltage;
 
 public class Constants {
 
@@ -22,7 +24,7 @@ public class Constants {
 
     // Drivetrain Constants
     public static final Distance wheelDiameter = Inches.of(3);
-    public static final double driveRatio = 1.0/7.31;
+    public static final double driveRatio = 1.0/8.45;
     public static final LinearVelocity maxDrivetrainSpeed = MetersPerSecond.of(3);
     public static final Distance driveRampDownDist = Meters.of(0.2);
     public static final Distance trackWidth = Inches.of(21.9375);
@@ -47,8 +49,8 @@ public class Constants {
     public static final double topIntakeVolt = 6;
     public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;
-    public static final double rEndEffectorVolt = 6;
-    public static final double lEndEffectorVolt = 6;
+    public static final Voltage rEndEffectorVolt = Volts.of(6);
+    public static final Voltage lEndEffectorVolt = Volts.of(6);
 
     
 
