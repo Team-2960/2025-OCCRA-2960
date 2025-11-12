@@ -120,12 +120,12 @@ public class RobotContainer {
 
         operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))); //Elevator to shelf 1
         operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.2))); //Elevator to shelf 2
-        operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.5))); //Elevator to shelf 3
+        operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7))); //Elevator to shelf 3
         operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
 
         operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(7.4)));
         operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.8)));
-        operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.5)));
+        operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7)));
         operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
 
     }
