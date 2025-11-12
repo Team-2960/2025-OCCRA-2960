@@ -39,9 +39,11 @@ public class RobotContainer {
 
     private final EndEffector endEffector;
 
+    //private final EndEffector endEffector;
+
     private final CommandXboxController driverCtrl;
 
-    // private final CommandXboxController operatorCtrl;
+    private final CommandXboxController operatorCtrl;
 
     private final SendableChooser<Command> autonChooser;
 
@@ -70,7 +72,7 @@ public class RobotContainer {
 
         // Initialize Controls
         driverCtrl = new CommandXboxController(0);
-        // operatorCtrl = new CommandXboxController(1);
+        operatorCtrl = new CommandXboxController(1);
 
         // Initialize auton chooser
         autonChooser = AutoBuilder.buildAutoChooser();
@@ -107,19 +109,24 @@ public class RobotContainer {
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
-        driverCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
-        driverCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
+        operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
+        operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
 
-        driverCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-3), () -> Volts.of(0)));
-        driverCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(-3)));
+        operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-3), () -> Volts.of(0)));
+        operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(-3)));
 
         // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
 
-        driverCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(2.8))); //Elevator to shelf 1
-        driverCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.1))); //Elevator to shelf 2
-        driverCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.7))); //Elevator to shelf 3
-        driverCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
+        operatorCtrl.x().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))); //Elevator to shelf 1
+        operatorCtrl.y().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.2))); //Elevator to shelf 2
+        operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.5))); //Elevator to shelf 3
+        operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
+
+        operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(7.4)));
+        operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.8)));
+        operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.5)));
+        operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
 
     }
 

@@ -17,7 +17,7 @@ public class Constants {
     public static final AngularVelocity maxElevatorSpeed = AngularVelocity.ofBaseUnits(12, RotationsPerSecond);
     public static final double elevatorScale = 1;
     public static final Angle elevatorRampDownDist = Angle.ofBaseUnits(0.5, Rotations);
-    public static final Angle elevTopLim = Rotations.of(12.71);
+    public static final Angle elevTopLim = Rotations.of(16.52);
     public static final Angle elevBotLim = Rotations.of(0.2);
 
     // Drivetrain Constants
