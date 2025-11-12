@@ -50,6 +50,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C.Port;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -109,6 +110,8 @@ public class Drivetrain extends SubsystemBase {
     private final RelativeEncoder rEncoder; // Right Drive Encoder
     private final Distance wheelRadius;
     private final double driveRatio;
+
+    private final DifferentialDrive diffDrive;
 
     private final MutVoltage appliedVoltage;
     private final MutCurrent appliedCurrent;
@@ -213,6 +216,9 @@ public class Drivetrain extends SubsystemBase {
 
         lEncoder.setPosition(0);
         rEncoder.setPosition(0);
+
+        //Set up differential drive class
+        diffDrive = new DifferentialDrive(lfMotor, rfMotor);
 
         //Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
@@ -324,6 +330,14 @@ public class Drivetrain extends SubsystemBase {
     public void setRate(LinearVelocity left, LinearVelocity right){
         setLRate(left);
         setRRate(right);
+    }
+    
+    public void setTankDrive(double leftStick, double rightStick){
+        diffDrive.tankDrive(leftStick, rightStick);
+    }
+
+    private void setArcadeDrive(double leftStick, double rightStick){
+        diffDrive.arcadeDrive(leftStick, rightStick);
     }
 
     public void driveRobotRelative(ChassisSpeeds chassisSpeeds){
@@ -494,6 +508,20 @@ public class Drivetrain extends SubsystemBase {
             );
     }
 
+    public Command getTankDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
+        return this.runEnd(
+            () -> setTankDrive(leftStick.get(), rightStick.get()), 
+            () -> setDrive(Volts.zero(), Volts.zero())
+        );
+    }
+
+    public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
+        return this.runEnd(
+            () -> setArcadeDrive(leftStick.get(), rightStick.get()), 
+            () -> setDrive(Volts.zero(), Volts.zero())
+        );
+    }
+
     public Voltage getLVoltage(){
         return Voltage.ofBaseUnits(lfMotor.getAppliedOutput() * lfMotor.getBusVoltage(), Volts);
     }
@@ -518,6 +546,7 @@ public class Drivetrain extends SubsystemBase {
             .linearVelocity(getLRate())
             .linearPosition(getLeftDistance());
     }
+
     /**
      * Generates a command to drive forward for a certain distance
      * 
