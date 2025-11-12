@@ -289,7 +289,7 @@ public class EndEffector extends SubsystemBase {
             }
             )
         )
-        .until(() -> getLimit())n
+        .until(() -> getLimit());
     }
     
     public Command getScoreCmd(){
