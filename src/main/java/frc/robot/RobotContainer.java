@@ -109,6 +109,16 @@ public class RobotContainer {
                 () -> rightCtrlVolt.mut_replace(MathUtil.applyDeadband(-driverCtrl.getRightY(), .1) * Constants.driveVolt, Volts)
         ));
 
+        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightY()) >= 0.1)
+        //     .onTrue(
+        //         drivetrain.getTankDriveCmd(() -> driverCtrl.getLeftY(), () -> driverCtrl.getRightY())
+        // );
+
+        // driverCtrl.axisGreaterThan(1, 0.1).or(() -> Math.abs(driverCtrl.getRightX()) >= 0.1)
+        //     .onTrue(
+        //         drivetrain.getArcadeDriveCmd(() -> driverCtrl.getLeftY(), () -> driverCtrl.getRightX())
+        // );
+
         operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(Constants.lEndEffectorVolt), () -> Volts.of(Constants.rEndEffectorVolt)));
         operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-Constants.lEndEffectorVolt), () -> Volts.of(-Constants.rEndEffectorVolt)));
 
