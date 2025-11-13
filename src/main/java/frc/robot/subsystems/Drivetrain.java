@@ -230,7 +230,7 @@ public class Drivetrain extends SubsystemBase {
         //Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
         driveFF = new SimpleMotorFeedforward(0.17074, 1.9301, 0.55485);
-        anglePID = new PIDController(0, 0, 0);
+        anglePID = new PIDController(0.048, 0, 0);
 
         anglePID.enableContinuousInput(-180, 180);
 
@@ -489,7 +489,7 @@ public class Drivetrain extends SubsystemBase {
     public void setAngle(Angle tarAngle){
         double rate = anglePID.calculate(getRotation2d().getDegrees(), tarAngle.in(Degrees));
 
-        setRate(MetersPerSecond.of(rate), MetersPerSecond.of(-rate));
+        setDrive(Volts.of(-rate), Volts.of(rate));
     }
 
     /**
@@ -579,7 +579,9 @@ public class Drivetrain extends SubsystemBase {
             .current(getLCurrent())
             .linearVelocity(getLRate())
             .linearPosition(getLeftDistance());
+
     }
+
 
     /**
      * Generates a command to drive forward for a certain distance
@@ -673,10 +675,12 @@ public class Drivetrain extends SubsystemBase {
             
     }
 
-    public Command getDriveToAnglePIDCmd(Angle angle){
+    public Command getDriveToAnglePIDCmd(Angle angle, Angle tolerance){
         return this.runEnd(
             () -> setAngle(angle), 
             () -> setDrive(Volts.zero(), Volts.zero())
+        ).until(
+            () -> tolerance.in(Degrees) >= (angle.minus(getWrappedAngle().getMeasure()).abs(Degrees))
         );
     }
 

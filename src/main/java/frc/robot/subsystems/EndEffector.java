@@ -284,8 +284,7 @@ public class EndEffector extends SubsystemBase {
         .andThen(this.runEnd(
             () -> setVoltage(Constants.lEndEffectorVolt, Constants.rEndEffectorVolt),
             () -> {
-                setRPos(this.startPosR);
-                setLPos(this.startPosL);
+                setVoltage(Volts.zero());
             }
             )
         )
@@ -319,7 +318,9 @@ public class EndEffector extends SubsystemBase {
                 () -> setVoltage(Volts.zero()))
                 .until(() -> timer.get() >= 0.3)
                 .andThen(Commands.waitSeconds(4))
-                ))
+                )
+        )
+        .unless(() -> getLimit())
         .repeatedly();
         
     }

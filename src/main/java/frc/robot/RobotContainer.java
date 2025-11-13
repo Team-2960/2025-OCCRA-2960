@@ -127,8 +127,8 @@ public class RobotContainer {
         operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIntakeCmd());
         operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Constants.lEndEffectorVolt.times(-1), () -> Constants.rEndEffectorVolt.times(-1)));
 
-        operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-3), () -> Volts.of(0)));
-        operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(0), () -> Volts.of(-3)));
+        operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-12), () -> Volts.of(-2)));
+        operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-2), () -> Volts.of(-12)));
 
         // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
@@ -138,10 +138,12 @@ public class RobotContainer {
         operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7))); //Elevator to shelf 3
         operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
 
-        operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(7.4)));
-        operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(12.8)));
+        operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.4)));
+        operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(13.8)));
         operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7)));
         operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
+
+        driverCtrl.a().whileTrue(drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.zero()));
 
     }
 
@@ -175,11 +177,11 @@ public class RobotContainer {
     private Command getOneBlockAuto(){
         return Commands.sequence(
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(4.5), Meters.of(4.5)),
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(4), Meters.of(4)),
                 endEffector.getIntakeCmd()
             ),
             Commands.race(
-                drivetrain.getDriveToAnglePIDCmd(Degrees.of(120)),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(120), Degrees.of(1)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
             ),
             Commands.race(
