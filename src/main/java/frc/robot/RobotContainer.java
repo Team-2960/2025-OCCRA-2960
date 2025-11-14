@@ -177,8 +177,7 @@ public class RobotContainer {
     private Command getOneBlockAuto(){
         return Commands.sequence(
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(5), Meters.of(3.8), Meters.of(3.8)),
-                endEffector.getIntakeCmd()
+                drivetrain.getDriveDistanceCmd(Volts.of(5), Meters.of(3.8), Meters.of(3.8))
             ),
 
             elevator.getElevatorPosCmd(() -> Rotations.of(1.3)).deadlineFor(Commands.waitSeconds(0.5)),
@@ -186,9 +185,11 @@ public class RobotContainer {
             Commands.race(
                 drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(1))
             ),
+            elevator.getElevatorPosCmd(() -> Rotations.of(6.9)).deadlineFor(Commands.waitSeconds(3)),
             Commands.race(
                 drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(0.2), Meters.of(0.2)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+                
             ),
             Commands.deadline(Commands.waitSeconds(3), 
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
