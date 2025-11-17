@@ -32,8 +32,6 @@ import frc.robot.subsystems.EndEffector;
 
 public class RobotContainer {
 
-    private GenericEntry sb_matchTimer;
-
     private final Drivetrain drivetrain;
 
     private final Elevator elevator;
@@ -55,13 +53,6 @@ public class RobotContainer {
      * Sets up the robot
      */
     public RobotContainer() {
-
-        // Adding match timer printout TODO remove if this does not work
-        var match_info = Shuffleboard.getTab("Occra 2025")
-            .getLayout("Match Info", BuiltInLayouts.kList)
-            .withSize(2, 4);
-
-        sb_matchTimer = match_info.add("Match Timer", -1).getEntry();
 
 
         // Initialize Robot & set motor IDs
@@ -138,8 +129,8 @@ public class RobotContainer {
         operatorCtrl.b().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7))); //Elevator to shelf 3
         operatorCtrl.a().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(0))); //Elevator to bottom
 
-        operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(8.4)));
-        operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(13.8)));
+        operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(7.7)));
+        operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(13)));
         operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7)));
         operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
 

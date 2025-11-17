@@ -36,6 +36,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -53,6 +54,8 @@ import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -74,34 +77,35 @@ import frc.robot.util.BNO055.vector_type_t;
  */
 public class Drivetrain extends SubsystemBase {
 
-    public class DriveLDistanceCmd extends Command{
+    public class DriveLDistanceCmd extends Command {
 
         private Distance startDistance;
         private Distance distance;
         private Voltage volts;
 
-        public DriveLDistanceCmd(Voltage volts, Distance distance){
+        public DriveLDistanceCmd(Voltage volts, Distance distance) {
             this.startDistance = getLeftDistance();
             this.distance = distance;
             this.volts = volts;
         }
 
         @Override
-        public void execute(){
+        public void execute() {
         }
 
         @Override
-        public boolean isFinished(){
+        public boolean isFinished() {
             return (distance.in(Meters) <= (getLeftDistance().in(Meters) - startDistance.in(Meters)));
         }
-        
-        @Override 
-        public void end(boolean interrupted){
+
+        @Override
+        public void end(boolean interrupted) {
             driveLMotor(Volts.zero());
         }
 
     }
 
+    private GenericEntry sb_matchTimer;// Init timer printout
 
     private final SparkMax lfMotor; // Left Front Drive Motor
     private final SparkMax lrMotor; // Left Rear Drive Motor
@@ -128,7 +132,7 @@ public class Drivetrain extends SubsystemBase {
     public final Command sysIdCommandDownDyn;
     public final Command sysIdCommandGroup;
 
-    //Feedback Controller
+    // Feedback Controller
     private final PIDController drivePID;
     private final SimpleMotorFeedforward driveFF;
     private final PIDController anglePID;
@@ -137,7 +141,6 @@ public class Drivetrain extends SubsystemBase {
     private Distance startDistanceR = Meters.of(0);
     private Angle startAngle = Rotations.zero();
 
-    
     private AHRS navx;
     // private AnalogGyro gyro;
 
@@ -153,7 +156,7 @@ public class Drivetrain extends SubsystemBase {
      * @param lrMotorID   Motor ID for the left rear motor. This motor will be set
      *                    to follow the left front motor.
      * @param lfMotorID   Motor ID for the right front motor. This is the
-     *  motor that
+     *                    motor that
      *                    will be used for the right encoder.
      * @param lrMotorID   Motor ID for the right rear motor. This motor will be set
      *                    to follow the right front motor.
@@ -165,6 +168,13 @@ public class Drivetrain extends SubsystemBase {
     public Drivetrain(int lfMotorID, int lbMotorID, int rfMotorID, int rbMotorID, double driveRatio,
             Distance wheelRadius) {
 
+        //Creates the match timer in elastic
+        var match_info = Shuffleboard.getTab("Occra 2025")//creates new tab
+            .getLayout("Match Info", BuiltInLayouts.kList)//adds title
+            .withSize(2, 4);//adjusts size
+
+        sb_matchTimer = match_info.add("Match Timer", -1).getEntry();
+
         // Create Motors
         lfMotor = new SparkMax(lfMotorID, MotorType.kBrushless);
         lrMotor = new SparkMax(lbMotorID, MotorType.kBrushless);
@@ -175,10 +185,12 @@ public class Drivetrain extends SubsystemBase {
 
         this.driveRatio = driveRatio;
 
-        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_GYRONLY, vector_type_t.VECTOR_EULER);
+        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_GYRONLY,
+        // vector_type_t.VECTOR_EULER);
         // byte address = 0x29;
-        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS, vector_type_t.VECTOR_EULER, Port.kOnboard, address);       
-        
+        // imu = BNO055.getInstance(opmode_t.OPERATION_MODE_IMUPLUS,
+        // vector_type_t.VECTOR_EULER, Port.kOnboard, address);
+
         // gyro = new AnalogGyro(0);
 
         navx = new AHRS(NavXComType.kMXP_SPI);
@@ -191,7 +203,8 @@ public class Drivetrain extends SubsystemBase {
         // Configure Left Front Motor
         SparkMaxConfig lfConfig = new SparkMaxConfig();
 
-        // lfConfig.encoder.positionConversionFactor(distPerRev); // Set the left encoder position conversion factor
+        // lfConfig.encoder.positionConversionFactor(distPerRev); // Set the left
+        // encoder position conversion factor
 
         lfMotor.configure(lfConfig, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
 
@@ -205,7 +218,8 @@ public class Drivetrain extends SubsystemBase {
         // Configure Right Front Motor
         SparkMaxConfig rfConfig = new SparkMaxConfig();
 
-        // rfConfig.encoder.positionConversionFactor(distPerRev); // Set the right encoder position conversion factor
+        // rfConfig.encoder.positionConversionFactor(distPerRev); // Set the right
+        // encoder position conversion factor
 
         rfMotor.configure(rfConfig, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
 
@@ -223,11 +237,11 @@ public class Drivetrain extends SubsystemBase {
         lEncoder.setPosition(0);
         rEncoder.setPosition(0);
 
-        //Set up differential drive class
+        // Set up differential drive class
         diffDrive = new DifferentialDrive(lfMotor, rfMotor);
         diffDrive.setSafetyEnabled(false);
 
-        //Feedback Controllers
+        // Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
         driveFF = new SimpleMotorFeedforward(0.17074, 1.9301, 0.55485);
         anglePID = new PIDController(0.048, 0, 0);
@@ -236,67 +250,70 @@ public class Drivetrain extends SubsystemBase {
 
         anglePID.setTolerance(1);
 
-        //System Identification
+        // System Identification
         appliedVoltage = Volts.mutable(0);
         appliedCurrent = Amps.mutable(0);
         angle = Rotations.mutable(0);
-        linearVelocity =  MetersPerSecond.mutable(0);
+        linearVelocity = MetersPerSecond.mutable(0);
 
         sysIdRoutine = new SysIdRoutine(
-            new Config(
-                Volts.per(Second).of(.5),
-                Volts.of(2),
-                Seconds.of(4)
-            ), 
-            new Mechanism(
-                this::driveBMotor,
-                this::sysIDLogging, this)
-        );
+                new Config(
+                        Volts.per(Second).of(.5),
+                        Volts.of(2),
+                        Seconds.of(4)),
+                new Mechanism(
+                        this::driveBMotor,
+                        this::sysIDLogging, this));
 
-
-        sysIdCommandUpQuasi = sysIdRoutine.quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward);
-        sysIdCommandDownQuasi = sysIdRoutine.quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
+        sysIdCommandUpQuasi = sysIdRoutine
+                .quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward);
+        sysIdCommandDownQuasi = sysIdRoutine
+                .quasistatic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
         sysIdCommandUpDyn = sysIdRoutine.dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward);
-        sysIdCommandDownDyn = sysIdRoutine.dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
+        sysIdCommandDownDyn = sysIdRoutine
+                .dynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse);
 
-        sysIdCommandGroup =  new SequentialCommandGroup(
-            sysIdCommandUpQuasi,
-            sysIdCommandDownQuasi,
-            sysIdCommandUpDyn,
-            sysIdCommandDownDyn
-        );
+        sysIdCommandGroup = new SequentialCommandGroup(
+                sysIdCommandUpQuasi,
+                sysIdCommandDownQuasi,
+                sysIdCommandUpDyn,
+                sysIdCommandDownDyn);
 
         kinematics = new DifferentialDriveKinematics(Constants.trackWidth.in(Meters));
         poseEstimator = new DifferentialDrivePoseEstimator(kinematics, getRotation2d(), 0, 0, new Pose2d());
 
-        try{
-        config = RobotConfig.fromGUISettings();
+        try {
+            config = RobotConfig.fromGUISettings();
         } catch (Exception e) {
-        // Handle exception as needed
-        e.printStackTrace();
+            // Handle exception as needed
+            e.printStackTrace();
         }
 
-    // Configure AutoBuilder last
+        // Configure AutoBuilder last
         AutoBuilder.configure(
-            this::getPose, // Robot pose supplier
-            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-            new PPLTVController(0.01), // PPLTVController is the built in path following controller for differential drive trains
-            config, // The robot configuration
-            () -> {
-              // Boolean supplier that controls when the path will be mirrored for the red alliance
-              // This will flip the path being followed to the red side of the field.
-              // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+                this::getPose, // Robot pose supplier
+                this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT
+                                                                      // RELATIVE ChassisSpeeds. Also optionally outputs
+                                                                      // individual module feedforwards
+                new PPLTVController(0.01), // PPLTVController is the built in path following controller for differential
+                                           // drive trains
+                config, // The robot configuration
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
 
-              var alliance = DriverStation.getAlliance();
-              if (alliance.isPresent()) {
-                return alliance.get() == DriverStation.Alliance.Red;
-              }
-              return false;
-            },
-            this // Reference to this subsystem to set requirements
-    );
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this // Reference to this subsystem to set requirements
+        );
     }
 
     /**
@@ -310,52 +327,54 @@ public class Drivetrain extends SubsystemBase {
         rfMotor.setVoltage(right);
     }
 
-    public void driveRMotor(Voltage voltage){
+    public void driveRMotor(Voltage voltage) {
         rfMotor.setVoltage(voltage);
     }
-    public void driveLMotor(Voltage voltage){
+
+    public void driveLMotor(Voltage voltage) {
         lfMotor.setVoltage(voltage);
     }
-    public void driveBMotor(Voltage voltage){
+
+    public void driveBMotor(Voltage voltage) {
         lfMotor.setVoltage(voltage);
         rfMotor.setVoltage(voltage);
     }
 
-    public void setLRate(LinearVelocity rate){
+    public void setLRate(LinearVelocity rate) {
         double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
         double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
         driveLMotor(Volts.of(pidVolt + ffVolt));
     }
 
-    public void setRRate(LinearVelocity rate){
+    public void setRRate(LinearVelocity rate) {
         double pidVolt = drivePID.calculate(getRRate().in(MetersPerSecond));
         double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
 
         driveRMotor(Volts.of(pidVolt + ffVolt));
     }
 
-    public void setRate(LinearVelocity left, LinearVelocity right){
+    public void setRate(LinearVelocity left, LinearVelocity right) {
         setLRate(left);
         setRRate(right);
     }
-    
-    public void setTankDrive(double leftStick, double rightStick){
+
+    public void setTankDrive(double leftStick, double rightStick) {
         diffDrive.tankDrive(leftStick, rightStick);
         diffDrive.feed();
     }
 
-    private void setArcadeDrive(double leftStick, double rightStick){
+    private void setArcadeDrive(double leftStick, double rightStick) {
         diffDrive.arcadeDrive(leftStick, rightStick);
     }
 
-    public void arcadeDrive(double leftJoy, double rightJoy){
+    public void arcadeDrive(double leftJoy, double rightJoy) {
         double leftCalc = Math.max(Math.min(leftJoy - rightJoy, 1), -1);
         double rightCalc = Math.max(Math.min(leftJoy + rightJoy, 1), -1);
 
         setDrive(Volts.of(leftCalc * 12), Volts.of(rightCalc * 12));
     }
 
-    public void driveRobotRelative(ChassisSpeeds chassisSpeeds){
+    public void driveRobotRelative(ChassisSpeeds chassisSpeeds) {
         double left = kinematics.toWheelSpeeds(chassisSpeeds).leftMetersPerSecond;
         double right = kinematics.toWheelSpeeds(chassisSpeeds).rightMetersPerSecond;
 
@@ -369,12 +388,13 @@ public class Drivetrain extends SubsystemBase {
         Distance posError = targetPos.minus(getLeftDistance().minus(startPos));
 
         double targetSpeed = maxPosRate * ((posError.in(Meters) > 0 ? 1 : -1));
-        //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
+        // double rampDownSpeed = posError / Constants.elevatorRampDownDist *
+        // maxPosRate;
         double rampDownSpeed = posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude();
 
         if (Math.abs(rampDownSpeed) < Math.abs(targetSpeed))
             targetSpeed = rampDownSpeed;
-        
+
         setLRate(MetersPerSecond.of(targetSpeed));
     }
 
@@ -384,12 +404,13 @@ public class Drivetrain extends SubsystemBase {
         Distance posError = targetPos.minus(getRightDistance().minus(startPos));
 
         double targetSpeed = maxPosRate * ((posError.in(Meters) > 0 ? 1 : -1));
-        //double rampDownSpeed = posError / Constants.elevatorRampDownDist * maxPosRate;
+        // double rampDownSpeed = posError / Constants.elevatorRampDownDist *
+        // maxPosRate;
         double rampDownSpeed = posError.div(Constants.driveRampDownDist.times(maxPosRate)).magnitude();
 
         if (Math.abs(rampDownSpeed) < Math.abs(targetSpeed))
             targetSpeed = rampDownSpeed;
-        
+
         setRRate(MetersPerSecond.of(targetSpeed));
     }
 
@@ -399,78 +420,80 @@ public class Drivetrain extends SubsystemBase {
      * @return average distance traveled by both sides of the drivetrain
      */
     // public Distance getDistance() {
-    //     double lDist = lEncoder.getPosition();
-    //     double rDist = rEncoder.getPosition();
-    //     double avgDist = (lDist + rDist) / 2;
+    // double lDist = lEncoder.getPosition();
+    // double rDist = rEncoder.getPosition();
+    // double avgDist = (lDist + rDist) / 2;
 
-    //     return Inches.of(avgDist);
+    // return Inches.of(avgDist);
     // }
 
-    public Angle getRightRotations(){
+    public Angle getRightRotations() {
         return Rotations.of(rEncoder.getPosition());
     }
 
-    public Angle getLeftRotations(){
+    public Angle getLeftRotations() {
         return Rotations.of(lEncoder.getPosition());
     }
 
-    public Distance getRightDistance(){
+    public Distance getRightDistance() {
         return Meters.of(getRightRotations().in(Rotations) * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
     /**
-     * Returns distance traveled calculated by the rotations, gear ratio, and the circumference(2*pi*r) of the wheel
+     * Returns distance traveled calculated by the rotations, gear ratio, and the
+     * circumference(2*pi*r) of the wheel
+     * 
      * @return
      */
-    public Distance getLeftDistance(){
+    public Distance getLeftDistance() {
         return Meters.of(getLeftRotations().in(Rotations) * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
-    public Pose2d getPose(){
+    public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
     }
 
-    public DifferentialDriveWheelPositions getDriveWheelPositions(){
+    public DifferentialDriveWheelPositions getDriveWheelPositions() {
         return new DifferentialDriveWheelPositions(getLeftDistance(), getRightDistance());
     }
 
-    public DifferentialDriveWheelSpeeds getDriveWheelSpeeds(){
+    public DifferentialDriveWheelSpeeds getDriveWheelSpeeds() {
         return new DifferentialDriveWheelSpeeds(getLRate(), getRRate());
     }
 
-    public ChassisSpeeds getChassisSpeeds(){
+    public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getDriveWheelSpeeds());
     }
 
-    public void resetPose(Pose2d pose){
+    public void resetPose(Pose2d pose) {
         poseEstimator.resetPose(pose);
     }
 
-    private void setStartDistanceL(Distance startDistance){
+    private void setStartDistanceL(Distance startDistance) {
         this.startDistanceL = startDistance;
     }
 
-    private void setStartDistanceR(Distance startDistance){
+    private void setStartDistanceR(Distance startDistance) {
         this.startDistanceR = startDistance;
     }
 
-    public void setStartAngle(Angle startAngle){
+    public void setStartAngle(Angle startAngle) {
         this.startAngle = startAngle;
     }
 
     // public Rotation2d getRotation2d(){
-    //     int times = (int) imu.getHeading()/180;
-    //     int multiplier = (times%2 == 1) ? 1 : 0;
-    //     double newAngle = imu.getHeading() - (180 * times) - (180 * multiplier);
+    // int times = (int) imu.getHeading()/180;
+    // int multiplier = (times%2 == 1) ? 1 : 0;
+    // double newAngle = imu.getHeading() - (180 * times) - (180 * multiplier);
 
-    //     return Rotation2d.fromDegrees(newAngle);
+    // return Rotation2d.fromDegrees(newAngle);
     // }
 
-    public Rotation2d getRotation2d(){
+    public Rotation2d getRotation2d() {
         return navx.getRotation2d();
     }
 
-    public Rotation2d wrapAngle(Rotation2d angle){
+    public Rotation2d wrapAngle(Rotation2d angle) {
         double magnitude = angle.getDegrees() % 360;
 
         if (magnitude >= 180.0)
@@ -481,12 +504,11 @@ public class Drivetrain extends SubsystemBase {
         return Rotation2d.fromDegrees(magnitude);
     }
 
-    public Rotation2d getWrappedAngle(){
+    public Rotation2d getWrappedAngle() {
         return wrapAngle(getRotation2d());
     }
 
-    
-    public void setAngle(Angle tarAngle){
+    public void setAngle(Angle tarAngle) {
         double rate = anglePID.calculate(getRotation2d().getDegrees(), tarAngle.in(Degrees));
 
         setDrive(Volts.of(-rate), Volts.of(rate));
@@ -500,9 +522,9 @@ public class Drivetrain extends SubsystemBase {
         rEncoder.setPosition(0);
     }
 
- 
     /**
      * Drive command factory
+     * 
      * @param left  left drive voltage supplier
      * @param right right drive voltage supplier
      * @return new drive command
@@ -513,75 +535,68 @@ public class Drivetrain extends SubsystemBase {
                 () -> setDrive(Volts.zero(), Volts.zero()));
     }
 
-    public Command getDriveRMotorCmd(Supplier<Voltage> voltage){
-        return this.runEnd( 
-            () -> driveRMotor(voltage.get()),
-            () -> driveRMotor(Volts.zero())
-        );
-    }
-
-    public Command getDriveLMotorCmd(Supplier<Voltage> voltage){
-        return this.runEnd( 
-            () -> driveLMotor(voltage.get()),
-            () -> driveLMotor(Volts.zero())
-        );
-    }
-
-
-    public Command getDriveBMotor(Supplier<Voltage> voltage){
+    public Command getDriveRMotorCmd(Supplier<Voltage> voltage) {
         return this.runEnd(
-            () -> driveBMotor(voltage.get()),
-            () -> driveBMotor(Volts.zero())
-            );
+                () -> driveRMotor(voltage.get()),
+                () -> driveRMotor(Volts.zero()));
     }
 
-    public Command getTankDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
+    public Command getDriveLMotorCmd(Supplier<Voltage> voltage) {
         return this.runEnd(
-            () -> setTankDrive(leftStick.get(), rightStick.get()), 
-            () -> setDrive(Volts.zero(), Volts.zero())
-        );
+                () -> driveLMotor(voltage.get()),
+                () -> driveLMotor(Volts.zero()));
     }
 
-    // public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
-    //     return this.runEnd(
-    //         () -> setArcadeDrive(leftStick.get(), rightStick.get()), 
-    //         () -> setDrive(Volts.zero(), Volts.zero())
-    //     );
+    public Command getDriveBMotor(Supplier<Voltage> voltage) {
+        return this.runEnd(
+                () -> driveBMotor(voltage.get()),
+                () -> driveBMotor(Volts.zero()));
+    }
+
+    public Command getTankDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick) {
+        return this.runEnd(
+                () -> setTankDrive(leftStick.get(), rightStick.get()),
+                () -> setDrive(Volts.zero(), Volts.zero()));
+    }
+
+    // public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double>
+    // rightStick){
+    // return this.runEnd(
+    // () -> setArcadeDrive(leftStick.get(), rightStick.get()),
+    // () -> setDrive(Volts.zero(), Volts.zero())
+    // );
     // }
 
-    public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick){
+    public Command getArcadeDriveCmd(Supplier<Double> leftStick, Supplier<Double> rightStick) {
         return this.runEnd(
-            () -> arcadeDrive(leftStick.get(), rightStick.get()), 
-            () -> setDrive(Volts.zero(), Volts.zero())
-        );
+                () -> arcadeDrive(leftStick.get(), rightStick.get()),
+                () -> setDrive(Volts.zero(), Volts.zero()));
     }
 
-    public Voltage getLVoltage(){
+    public Voltage getLVoltage() {
         return Voltage.ofBaseUnits(lfMotor.getAppliedOutput() * lfMotor.getBusVoltage(), Volts);
     }
 
-    public Current getLCurrent(){
+    public Current getLCurrent() {
         return Amps.of(lfMotor.getOutputCurrent());
     }
 
-    public LinearVelocity getLRate(){
-        return MetersPerSecond.of(lEncoder.getVelocity()/60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+    public LinearVelocity getLRate() {
+        return MetersPerSecond.of(lEncoder.getVelocity() / 60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
-    public LinearVelocity getRRate(){
-        return MetersPerSecond.of(rEncoder.getVelocity()/60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
+    public LinearVelocity getRRate() {
+        return MetersPerSecond.of(rEncoder.getVelocity() / 60 * driveRatio * 2 * wheelRadius.in(Meters) * Math.PI);
     }
 
-
-    private void sysIDLogging(SysIdRoutineLog log){
+    private void sysIDLogging(SysIdRoutineLog log) {
         log.motor("Drivetrain")
-            .voltage(getLVoltage())
-            .current(getLCurrent())
-            .linearVelocity(getLRate())
-            .linearPosition(getLeftDistance());
+                .voltage(getLVoltage())
+                .current(getLCurrent())
+                .linearVelocity(getLRate())
+                .linearPosition(getLeftDistance());
 
     }
-
 
     /**
      * Generates a command to drive forward for a certain distance
@@ -591,10 +606,13 @@ public class Drivetrain extends SubsystemBase {
      * @return new command to drive the robot until it reaches a given distance
      */
     // public Command getDriveDistCmd(Distance dist, Voltage voltage) {
-    //     return Commands.deadline(Commands.waitUntil(() -> getDistance().gte(dist)), // Waits until the robot has reached
-    //                                                                                 // a certain distance
-    //             this.startEnd( // Sets the motors to a voltage at the start and turns them off at the end
-    //                     () -> setDrive(voltage, voltage), () -> setDrive(Volts.zero(), Volts.zero())));
+    // return Commands.deadline(Commands.waitUntil(() -> getDistance().gte(dist)),
+    // // Waits until the robot has reached
+    // // a certain distance
+    // this.startEnd( // Sets the motors to a voltage at the start and turns them
+    // off at the end
+    // () -> setDrive(voltage, voltage), () -> setDrive(Volts.zero(),
+    // Volts.zero())));
     // }
 
     /**
@@ -612,105 +630,102 @@ public class Drivetrain extends SubsystemBase {
                         () -> setDrive(voltage, voltage.unaryMinus()), () -> setDrive(Volts.zero(), Volts.zero())));
     }
 
-    public Command getDriveLDistanceCmd(Voltage volts, Distance distance){
-    
+    public Command getDriveLDistanceCmd(Voltage volts, Distance distance) {
+
         return this.runOnce(() -> setStartDistanceL(getLeftDistance()))
-            .andThen(
-                this.runEnd(
-                    () -> driveLMotor(volts), 
-                    () -> driveLMotor(Volts.of(0))
-                )
-            )
-            .until(() -> distance.in(Meters) <= (getLeftDistance().in(Meters) - this.startDistanceL.in(Meters)));
+                .andThen(
+                        this.runEnd(
+                                () -> driveLMotor(volts),
+                                () -> driveLMotor(Volts.of(0))))
+                .until(() -> distance.in(Meters) <= (getLeftDistance().in(Meters) - this.startDistanceL.in(Meters)));
     }
 
-    public Command getDriveRDistanceCmd(Voltage volts, Distance distance){
-    
+    public Command getDriveRDistanceCmd(Voltage volts, Distance distance) {
+
         return this.runOnce(() -> setStartDistanceR(getRightDistance()))
-            .andThen(
-                this.runEnd(
-                    () -> driveRMotor(volts), 
-                    () -> driveRMotor(Volts.of(0))
-                )
-            )
-            .until(() -> distance.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters)));
+                .andThen(
+                        this.runEnd(
+                                () -> driveRMotor(volts),
+                                () -> driveRMotor(Volts.of(0))))
+                .until(() -> distance.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters)));
     }
 
-    public Command getDriveDistanceCmd(Voltage volts, Distance left, Distance right){
+    public Command getDriveDistanceCmd(Voltage volts, Distance left, Distance right) {
         return this.runOnce(() -> {
-                setStartDistanceR(getRightDistance());
-                setStartDistanceL(getLeftDistance());
-            })
-            .andThen(
-                this.runEnd(
-                    () -> {
-                        setDrive(volts, volts);
-                    }, 
-                    () -> driveRMotor(Volts.of(0))
-                )
-                .until(
-                    () -> right.in(Meters) <= (getRightDistance().in(Meters) - this.startDistanceL.in(Meters))
-                        && left.in(Meters) <= (getLeftDistance().in(Meters) - this.startDistanceL.in(Meters)))
-            );
+            setStartDistanceR(getRightDistance());
+            setStartDistanceL(getLeftDistance());
+        })
+                .andThen(
+                        this.runEnd(
+                                () -> {
+                                    setDrive(volts, volts);
+                                },
+                                () -> driveRMotor(Volts.of(0)))
+                                .until(
+                                        () -> right
+                                                .in(Meters) <= (getRightDistance().in(Meters)
+                                                        - this.startDistanceL.in(Meters))
+                                                && left.in(Meters) <= (getLeftDistance().in(Meters)
+                                                        - this.startDistanceL.in(Meters))));
     }
 
-    public Command getDriveRateCmd(LinearVelocity left, LinearVelocity right){
+    public Command getDriveRateCmd(LinearVelocity left, LinearVelocity right) {
         return this.runEnd(
-        () -> setRate(left, right),
-        () -> setDrive(Volts.zero(), Volts.zero()));
+                () -> setRate(left, right),
+                () -> setDrive(Volts.zero(), Volts.zero()));
     }
 
-    public Command getDrivePosCmd(Distance left, Distance right){
+    public Command getDrivePosCmd(Distance left, Distance right) {
         return this.runOnce(() -> setStartDistanceR(getRightDistance()))
-            .andThen(this.runOnce(() -> setStartDistanceL(getLeftDistance())))
-            .andThen(
-                this.run(() -> {
-                    setLPos(left, this.startDistanceL);
-                    setRPos(right, this.startDistanceR);
-                })
-                .until(
-                    () -> left.isNear(getLeftDistance().minus(this.startDistanceL), Meters.of(0.01)) 
-                        && right.isNear(getLeftDistance().minus(this.startDistanceR), Meters.of(0.01)))
-            );
-            
+                .andThen(this.runOnce(() -> setStartDistanceL(getLeftDistance())))
+                .andThen(
+                        this.run(() -> {
+                            setLPos(left, this.startDistanceL);
+                            setRPos(right, this.startDistanceR);
+                        })
+                                .until(
+                                        () -> left.isNear(getLeftDistance().minus(this.startDistanceL), Meters.of(0.01))
+                                                && right.isNear(getLeftDistance().minus(this.startDistanceR),
+                                                        Meters.of(0.01))));
+
     }
 
-    public Command getDriveToAnglePIDCmd(Angle angle, Angle tolerance){
+    public Command getDriveToAnglePIDCmd(Angle angle, Angle tolerance) {
         return this.runEnd(
-            () -> setAngle(angle), 
-            () -> setDrive(Volts.zero(), Volts.zero())
-        ).until(
-            () -> tolerance.in(Degrees) >= (angle.minus(getWrappedAngle().getMeasure()).abs(Degrees))
-        );
+                () -> setAngle(angle),
+                () -> setDrive(Volts.zero(), Volts.zero())).until(
+                        () -> tolerance.in(Degrees) >= (angle.minus(getWrappedAngle().getMeasure()).abs(Degrees)));
     }
 
-    public Command getSysIdCommandGroup(){
+    public Command getSysIdCommandGroup() {
         return sysIdCommandGroup;
     }
 
-    public String getStringCommand(){
+    public String getStringCommand() {
         String commandName = "";
-        if (getCurrentCommand() == null){
+        if (getCurrentCommand() == null) {
             commandName = "null";
-        } else{
+        } else {
             commandName = getCurrentCommand().getName();
         }
-        
+
         return commandName;
     }
 
-
     @Override
-    public void periodic(){
+    public void periodic() {
         poseEstimator.update(getWrappedAngle(), getDriveWheelPositions());
 
-       // SmartDashboard.putNumber("Rotation", toRotation2d(gyro.getAngle()).getDegrees());
-        //SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
+        // SmartDashboard.putNumber("Rotation",
+        // toRotation2d(gyro.getAngle()).getDegrees());
+        // SmartDashboard.putNumber("Raw Rotation", gyro.getAngle());
         SmartDashboard.putNumber("Gyro Heading", wrapAngle(getRotation2d()).getDegrees());
         SmartDashboard.putNumber("Left Encoder", lEncoder.getPosition());
         SmartDashboard.putNumber("Left Distance", getLeftDistance().in(Meters));
         SmartDashboard.putNumber("Right Distance", getRightDistance().in(Meters));
         SmartDashboard.putString("Drivetrain Command", getStringCommand());
         SmartDashboard.putNumber("Drivetrain Rate", getRRate().in(MetersPerSecond));
+
+        sb_matchTimer.setDouble(DriverStation.getMatchTime());
     }
 }
