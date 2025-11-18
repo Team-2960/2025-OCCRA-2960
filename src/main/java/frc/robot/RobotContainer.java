@@ -120,8 +120,8 @@ public class RobotContainer {
         operatorCtrl.axisGreaterThan(3, 0.1).whileTrue(endEffector.getIntakeCmd());
         operatorCtrl.axisGreaterThan(2, 0.1).whileTrue(endEffector.getIndEndEffectorCmd(() -> Constants.lEndEffectorVolt.times(-1), () -> Constants.rEndEffectorVolt.times(-1)));
 
-        operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-12), () -> Volts.of(-2)));
-        operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-2), () -> Volts.of(-12)));
+        operatorCtrl.leftBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(-12), () -> Volts.of(4)));
+        operatorCtrl.rightBumper().whileTrue(endEffector.getIndEndEffectorCmd(() -> Volts.of(4), () -> Volts.of(-12)));
 
         // driverCtrl.a().onTrue(drivetrain.getDrivePosCmd(Meters.of(1), Meters.of(1)));
         // driverCtrl.b().onTrue(drivetrain.getDriveRateCmd(MetersPerSecond.of(1), MetersPerSecond.of(1)));
@@ -171,7 +171,7 @@ public class RobotContainer {
     private Command getR1BAuton(){
         return Commands.sequence(
 
-            Commands.waitSeconds(1).deadlineFor(endEffector.getIntakeCmd()),
+            Commands.waitSeconds(1.5).deadlineFor(endEffector.getIntakeCmd()),
 
             Commands.race(
                 drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(8.5), Feet.of(8.5)),
@@ -188,7 +188,7 @@ public class RobotContainer {
             Commands.waitSeconds(1).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
             
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(1.4), Feet.of(1.4)),
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(2), Feet.of(2)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
             ),
 
@@ -197,7 +197,14 @@ public class RobotContainer {
             Commands.deadline(Commands.waitSeconds(3), 
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
                 endEffector.getScoreCmd(EndEffectorSide.LEFT)
-            )
+            ),
+
+            Commands.race(
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+                //drivetrain.getDriveDistanceCmd(Volts.of(-3), Feet.of(-1), Feet.of(-1))
+            ),
+
+            elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
 
         );
     }

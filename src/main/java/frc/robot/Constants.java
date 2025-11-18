@@ -49,8 +49,8 @@ public class Constants {
     public static final double topIntakeVolt = 6;
     public static final double botIntakeVolt = 5;
     public static final double indexVolt = 6;
-    public static final Voltage rEndEffectorVolt = Volts.of(6);
-    public static final Voltage lEndEffectorVolt = Volts.of(6);
+    public static final Voltage rEndEffectorVolt = Volts.of(12);
+    public static final Voltage lEndEffectorVolt = Volts.of(12);
 
     
 

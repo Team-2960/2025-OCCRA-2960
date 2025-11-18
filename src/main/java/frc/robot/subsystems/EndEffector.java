@@ -297,8 +297,8 @@ public class EndEffector extends SubsystemBase {
     }
     
     public Command getScoreCmd(EndEffectorSide side){
-        Voltage lVolts = side == EndEffectorSide.LEFT ? Constants.lEndEffectorVolt.times(-1) : Volts.of(0);
-        Voltage rVolts = side == EndEffectorSide.RIGHT ? Constants.rEndEffectorVolt.times(-1) : Volts.of(0);
+        Voltage lVolts = side == EndEffectorSide.LEFT ? Constants.lEndEffectorVolt.times(-1) : Constants.lEndEffectorVolt.div(3);
+        Voltage rVolts = side == EndEffectorSide.RIGHT ? Constants.rEndEffectorVolt.times(-1) : Constants.rEndEffectorVolt.div(3);
 
         return this.runEnd(
             () -> {
