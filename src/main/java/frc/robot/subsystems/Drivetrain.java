@@ -655,18 +655,18 @@ public class Drivetrain extends SubsystemBase {
             setStartDistanceR(getRightDistance());
             setStartDistanceL(getLeftDistance());
         })
-                .andThen(
-                        this.runEnd(
-                                () -> {
-                                    setDrive(volts, volts);
-                                },
-                                () -> driveRMotor(Volts.of(0)))
-                                .until(
-                                        () -> right
-                                                .in(Meters) <= (getRightDistance().in(Meters)
-                                                        - this.startDistanceL.in(Meters))
-                                                && left.in(Meters) <= (getLeftDistance().in(Meters)
-                                                        - this.startDistanceL.in(Meters))));
+        .andThen(
+            this.runEnd(
+                    () -> setDrive(volts, volts),
+                    () -> driveBMotor(Volts.of(0))
+                )
+                .until(
+                    () -> right.in(Meters) <= (getRightDistance().in(Meters)
+                                    - this.startDistanceR.in(Meters))
+                            && left.in(Meters) <= (getLeftDistance().in(Meters)
+                                    - this.startDistanceL.in(Meters))
+                )
+        );
     }
 
     public Command getDriveRateCmd(LinearVelocity left, LinearVelocity right) {
@@ -692,14 +692,17 @@ public class Drivetrain extends SubsystemBase {
 
     public Command getDriveToAnglePIDCmd(Angle angle, Angle tolerance) {
         return this.runEnd(
-                () -> setAngle(angle),
-                () -> setDrive(Volts.zero(), Volts.zero())).until(
-                        () -> tolerance.in(Degrees) >= (angle.minus(getWrappedAngle().getMeasure()).abs(Degrees)));
+                () -> {setAngle(angle);  System.out.println(angle.minus(getWrappedAngle().getMeasure()).abs(Degrees));},
+                () -> setDrive(Volts.zero(), Volts.zero()))
+                .until(
+                    () -> tolerance.in(Degrees) >= (angle.minus(getWrappedAngle().getMeasure()).abs(Degrees))
+            );
     }
 
     public Command getSysIdCommandGroup() {
         return sysIdCommandGroup;
     }
+
 
     public String getStringCommand() {
         String commandName = "";

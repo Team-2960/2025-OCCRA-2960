@@ -46,6 +46,11 @@ import frc.robot.Constants;
 
 public class EndEffector extends SubsystemBase {
 
+    public enum EndEffectorSide{
+        LEFT,
+        RIGHT
+    }
+
     //Set Variables
     private final SparkMax lEndEffectorMotor;
     private final SparkMax rEndEffectorMotor;
@@ -291,9 +296,15 @@ public class EndEffector extends SubsystemBase {
         .until(() -> getLimit());
     }
     
-    public Command getScoreCmd(){
+    public Command getScoreCmd(EndEffectorSide side){
+        Voltage lVolts = side == EndEffectorSide.LEFT ? Constants.lEndEffectorVolt.times(-1) : Volts.of(0);
+        Voltage rVolts = side == EndEffectorSide.RIGHT ? Constants.rEndEffectorVolt.times(-1) : Volts.of(0);
+
         return this.runEnd(
-            () -> setVoltage(Constants.lEndEffectorVolt.times(-1)), 
+            () -> {
+                setLVoltage(lVolts);
+                setRVoltage(rVolts);
+            }, 
             () -> setVoltage(Volts.zero())
         );
     }

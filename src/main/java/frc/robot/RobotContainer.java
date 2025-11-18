@@ -5,6 +5,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Feet;
 import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -29,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Elevator;
 import frc.robot.subsystems.EndEffector;
+import frc.robot.subsystems.EndEffector.EndEffectorSide;
 
 public class RobotContainer {
 
@@ -77,7 +79,7 @@ public class RobotContainer {
         autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
         autonChooser.addOption("Test Auton", getTestAuto());
         autonChooser.addOption("End Effector SysID", endEffector.sysIdCommandGroup);
-        autonChooser.addOption("One Block Auto", getOneBlockAuto());
+        autonChooser.addOption("Right 1B Auton", getR1BAuton());
         
         // Configure control bindings
         configureBindings();
@@ -165,27 +167,38 @@ public class RobotContainer {
         );
     }
 
-    private Command getOneBlockAuto(){
+    //Right One Block Auton
+    private Command getR1BAuton(){
         return Commands.sequence(
-            Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(5), Meters.of(3.8), Meters.of(3.8))
-            ),
 
-            elevator.getElevatorPosCmd(() -> Rotations.of(1.3)).deadlineFor(Commands.waitSeconds(0.5)),
+            Commands.waitSeconds(1).deadlineFor(endEffector.getIntakeCmd()),
 
             Commands.race(
-                drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(1))
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(8.5), Feet.of(8.5)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
             ),
-            elevator.getElevatorPosCmd(() -> Rotations.of(6.9)).deadlineFor(Commands.waitSeconds(3)),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(1.3))),
+
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(0.2), Meters.of(0.2)),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(1)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+
+            Commands.waitSeconds(1).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+            
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(1.4), Feet.of(1.4)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
-                
             ),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+
             Commands.deadline(Commands.waitSeconds(3), 
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
-                endEffector.getScoreCmd()
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
             )
+
         );
     }
 
