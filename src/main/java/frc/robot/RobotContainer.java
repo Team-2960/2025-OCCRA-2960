@@ -19,6 +19,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -137,6 +138,7 @@ public class RobotContainer {
         operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
 
         driverCtrl.a().whileTrue(drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.zero()));
+        driverCtrl.b().whileTrue(elevator.getElevatorPosEndCmd(() -> Rotations.zero(), Degrees.of(2)));
 
     }
 
@@ -162,19 +164,18 @@ public class RobotContainer {
     }
 
     private Command getTestAuto(){
-        return Commands.sequence(
-            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(3.5), Meters.of(3.5))
-        );
+        return elevator.getElevatorPosEndCmd(() -> Rotations.of(5.6), Rotations.of(0.1));
+        
     }
 
     //Right One Block Auton
     private Command getR1BAuton(){
         return Commands.sequence(
-
-            Commands.waitSeconds(1.5).deadlineFor(endEffector.getIntakeCmd()),
+            
+            endEffector.getIntakeCmd(),
 
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(8.5), Feet.of(8.5)),
+                drivetrain.getDriveDistanceCmd(Volts.of(4.5), Feet.of(8.5), Feet.of(8.5)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
             ),
 
@@ -194,18 +195,28 @@ public class RobotContainer {
 
             Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
 
-            Commands.deadline(Commands.waitSeconds(3), 
+            Commands.deadline(Commands.waitSeconds(1.5), 
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
                 endEffector.getScoreCmd(EndEffectorSide.LEFT)
             ),
 
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(-1.1), Meters.of(-1.1)),
+
+            elevator.getElevatorPosEndCmd(() -> Rotations.zero(), Degrees.of(7)),
+            
+            drivetrain.getDriveToAnglePIDCmd(Degrees.of(-45), Degrees.of(1)),
+
             Commands.race(
-                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
-                //drivetrain.getDriveDistanceCmd(Volts.of(-3), Feet.of(-1), Feet.of(-1))
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(4), Feet.of(4)),
+                endEffector.getIntakeCmd()
             ),
 
-            elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            Commands.race(
+            elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3)),
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-6), Feet.of(-6))
+            ),
 
+            drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(1))
         );
     }
 

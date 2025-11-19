@@ -323,12 +323,12 @@ public class EndEffector extends SubsystemBase {
         ).andThen(
             (this.runEnd(
                 () -> {
-                    setLVoltage(Volts.of(3));
-                    setRVoltage(Volts.of(3));
+                    setLVoltage(Volts.of(4));
+                    setRVoltage(Volts.of(4));
                     },
                 () -> setVoltage(Volts.zero()))
                 .until(() -> timer.get() >= 0.3)
-                .andThen(Commands.waitSeconds(4))
+                .andThen(Commands.waitSeconds(3))
                 )
         )
         .unless(() -> getLimit())

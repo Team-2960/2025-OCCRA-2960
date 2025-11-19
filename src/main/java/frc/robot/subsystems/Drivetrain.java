@@ -651,20 +651,27 @@ public class Drivetrain extends SubsystemBase {
     }
 
     public Command getDriveDistanceCmd(Voltage volts, Distance left, Distance right) {
+
+        boolean leftBackwards = left.magnitude() < 0;
+        boolean rightBackwards = right.magnitude() < 0;
+
         return this.runOnce(() -> {
             setStartDistanceR(getRightDistance());
             setStartDistanceL(getLeftDistance());
         })
         .andThen(
             this.runEnd(
-                    () -> setDrive(volts, volts),
+                    () -> setDrive(Volts.of(volts.abs(Volts) * (leftBackwards ? -1 : 1)), Volts.of(volts.abs(Volts) * (leftBackwards ? -1 : 1))),
                     () -> driveBMotor(Volts.of(0))
                 )
                 .until(
-                    () -> right.in(Meters) <= (getRightDistance().in(Meters)
-                                    - this.startDistanceR.in(Meters))
-                            && left.in(Meters) <= (getLeftDistance().in(Meters)
-                                    - this.startDistanceL.in(Meters))
+                    () -> (rightBackwards ? right.in(Meters) >= (getRightDistance().in(Meters)
+                                    - this.startDistanceR.in(Meters)) : right.in(Meters) <= (getRightDistance().in(Meters)
+                                    - this.startDistanceR.in(Meters)))
+                                && 
+                                (leftBackwards ? left.in(Meters) >= (getLeftDistance().in(Meters)
+                                    - this.startDistanceL.in(Meters)) : left.in(Meters) <= (getLeftDistance().in(Meters)
+                                    - this.startDistanceL.in(Meters)))
                 )
         );
     }

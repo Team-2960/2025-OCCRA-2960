@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degree;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -252,12 +254,29 @@ public class Elevator extends SubsystemBase{
 
         return this.runEnd(
             () -> setElevatorPos(position.get()),
-            () -> setVoltage(Volts.zero())).unless(() -> getBotLimit(direction)).unless(() -> getTopLimit(direction)).finallyDo(() -> this.lastElevatorPos = getElevatorPos());
+            () -> setVoltage(Volts.zero()))
+            .unless(() -> getBotLimit(direction))
+            .unless(() -> getTopLimit(direction))
+            .finallyDo(() -> this.lastElevatorPos = getElevatorPos())
+            .withName("Elevator Pos Cmd");
+    }
+
+    public Command getElevatorPosEndCmd(Supplier<Angle> position, Angle tolerance){
+        LimitDirection direction = getDirection(position.get().in(Rotations));
+
+        return this.runEnd(
+            () -> setElevatorPos(position.get()),
+            () -> setVoltage(Volts.zero())
+        ).unless(() -> getBotLimit(direction))
+        .unless(() -> getTopLimit(direction))
+        .until(() -> getElevatorPos().isNear(position.get(), tolerance))
+        .finallyDo(() -> this.lastElevatorPos = position.get())
+        .withName("Elev Pos End Cmd");
     }
 
     //Command to hold Elevator Position
     public Command getHoldPosCmd(){
-        return this.run(() -> setElevatorPos(this.lastElevatorPos));
+        return this.run(() -> setElevatorPos(this.lastElevatorPos)).withName("Hold Command");
     }
 
     //Command to return System ID
