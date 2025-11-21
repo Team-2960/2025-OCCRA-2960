@@ -27,6 +27,7 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
@@ -244,7 +245,7 @@ public class Drivetrain extends SubsystemBase {
         // Feedback Controllers
         drivePID = new PIDController(0.20798, 0, 0);
         driveFF = new SimpleMotorFeedforward(0.17074, 1.9301, 0.55485);
-        anglePID = new PIDController(0.048, 0, 0);
+        anglePID = new PIDController(0.048, 0.001, 0.002);
 
         anglePID.enableContinuousInput(-180, 180);
 
@@ -343,7 +344,9 @@ public class Drivetrain extends SubsystemBase {
     public void setLRate(LinearVelocity rate) {
         double pidVolt = drivePID.calculate(getLRate().in(MetersPerSecond));
         double ffVolt = driveFF.calculate(rate.in(MetersPerSecond));
-        driveLMotor(Volts.of(pidVolt + ffVolt));
+        double result = MathUtil.clamp(pidVolt + ffVolt, -12, 12);
+        
+        driveLMotor(Volts.of(result));
     }
 
     public void setRRate(LinearVelocity rate) {

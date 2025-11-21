@@ -80,7 +80,9 @@ public class RobotContainer {
         autonChooser.addOption("SysIdRoutine", drivetrain.getSysIdCommandGroup());
         autonChooser.addOption("Test Auton", getTestAuto());
         autonChooser.addOption("End Effector SysID", endEffector.sysIdCommandGroup);
-        autonChooser.addOption("Right 1B Auton", getR1BAuton());
+        autonChooser.addOption("Right 2B Auton", getR2BAuton());
+        autonChooser.addOption("Left 2B Auton", getL2BAuton());
+        autonChooser.addOption("Left 3B Auton", getL3BAuton());
         
         // Configure control bindings
         configureBindings();
@@ -134,7 +136,7 @@ public class RobotContainer {
 
         operatorCtrl.povLeft().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(7.7)));
         operatorCtrl.povUp().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(13)));
-        operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(16.7)));
+        operatorCtrl.povRight().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(17.2)));
         operatorCtrl.povDown().onTrue(elevator.getElevatorPosCmd(() -> Rotations.of(1.3)));
 
         driverCtrl.a().whileTrue(drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.zero()));
@@ -169,7 +171,7 @@ public class RobotContainer {
     }
 
     //Right One Block Auton
-    private Command getR1BAuton(){
+    private Command getR2BAuton(){
         return Commands.sequence(
             
             endEffector.getIntakeCmd(),
@@ -182,14 +184,14 @@ public class RobotContainer {
             Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(1.3))),
 
             Commands.race(
-                drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(1)),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(3)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
             ),
 
             Commands.waitSeconds(1).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
             
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(2), Feet.of(2)),
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(2.2), Feet.of(2.2)),
                 elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
             ),
 
@@ -200,23 +202,178 @@ public class RobotContainer {
                 endEffector.getScoreCmd(EndEffectorSide.LEFT)
             ),
 
-            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(-1.1), Meters.of(-1.1)),
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(-1.25), Meters.of(-1.25)),
 
             elevator.getElevatorPosEndCmd(() -> Rotations.zero(), Degrees.of(7)),
             
-            drivetrain.getDriveToAnglePIDCmd(Degrees.of(-45), Degrees.of(1)),
+            drivetrain.getDriveToAnglePIDCmd(Degrees.of(-45), Degrees.of(5)),
 
             Commands.race(
-                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(4), Feet.of(4)),
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(3), Feet.of(3)),
                 endEffector.getIntakeCmd()
             ),
 
-            Commands.race(
-            elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3)),
-            drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-6), Feet.of(-6))
+            endEffector.getIntakeCmd(),
+
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-2), Feet.of(-2)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            
+            Commands.deadline(
+                Commands.waitSeconds(1),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(0)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(3.8), Feet.of(3.8)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
             ),
 
-            drivetrain.getDriveToAnglePIDCmd(Degrees.of(-90), Degrees.of(1))
+            Commands.deadline(Commands.waitSeconds(1.5), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
+            ),
+
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-1), Feet.of(-1))
+        );
+    }
+
+     //Right One Block Auton
+     private Command getL2BAuton(){
+        return Commands.sequence(
+            
+            endEffector.getIntakeCmd(),
+
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(4.5), Feet.of(8.5), Feet.of(8.5)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(1.3))),
+
+            Commands.race(
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(3)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+
+            Commands.waitSeconds(1).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+            
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(2.2), Feet.of(2.2)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+            ),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+
+            Commands.deadline(Commands.waitSeconds(1.5), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
+            ),
+
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Meters.of(-1.35), Meters.of(-1.35)),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosEndCmd(() -> Rotations.zero(), Degrees.of(7))),
+            
+            drivetrain.getDriveToAnglePIDCmd(Degrees.of(40), Degrees.of(5)),
+
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(3.3), Feet.of(3.3)),
+                endEffector.getIntakeCmd()
+            ),
+
+            endEffector.getIntakeCmd(),
+
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-2), Feet.of(-2)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            
+            Commands.deadline(
+                Commands.waitSeconds(1),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(0)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(3.8), Feet.of(3.8)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+            ),
+
+            Commands.deadline(Commands.waitSeconds(1.5), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
+            ),
+
+            drivetrain.getDriveDistanceCmd(Volts.of(3), Feet.of(-1), Feet.of(-1))
+        );
+    }
+
+    private Command getL3BAuton(){
+        return Commands.sequence(
+            
+            //endEffector.getIntakeCmd(),
+
+            Commands.race(
+                drivetrain.getDrivePosCmd(Feet.of(8.5), Feet.of(8.5)),
+                //drivetrain.getDriveDistanceCmd(Volts.of(7), Feet.of(8.5), Feet.of(8.5)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(1.3))),
+
+            Commands.race(
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(3)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(1.3))
+            ),
+
+            Commands.waitSeconds(1).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+            
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(5), Feet.of(2.2), Feet.of(2.2)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+            ),
+
+            Commands.waitSeconds(0.5).deadlineFor(elevator.getElevatorPosCmd(() -> Rotations.of(6.9))),
+
+            Commands.deadline(Commands.waitSeconds(1.5), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
+            ),
+
+            drivetrain.getDriveDistanceCmd(Volts.of(5), Meters.of(-1.35), Meters.of(-1.35)),
+
+            elevator.getElevatorPosEndCmd(() -> Rotations.zero(), Degrees.of(7)),
+            
+            drivetrain.getDriveToAnglePIDCmd(Degrees.of(40), Degrees.of(5)),
+
+            Commands.race(
+                drivetrain.getDriveDistanceCmd(Volts.of(5), Feet.of(3), Feet.of(3)),
+                endEffector.getIntakeCmd()
+            ),
+
+            endEffector.getIntakeCmd(),
+
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(5), Feet.of(-2), Feet.of(-2)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            
+            Commands.deadline(
+                Commands.waitSeconds(1),
+                drivetrain.getDriveToAnglePIDCmd(Degrees.of(90), Degrees.of(0)),
+                elevator.getElevatorPosEndCmd(() -> Rotations.of(1.5), Degrees.of(3))
+            ),
+            Commands.deadline(
+                drivetrain.getDriveDistanceCmd(Volts.of(5), Feet.of(3.8), Feet.of(3.8)),
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9))
+            ),
+
+            Commands.deadline(Commands.waitSeconds(1.5), 
+                elevator.getElevatorPosCmd(() -> Rotations.of(6.9)),
+                endEffector.getScoreCmd(EndEffectorSide.LEFT)
+            ),
+
+            drivetrain.getDriveDistanceCmd(Volts.of(5), Feet.of(-1), Feet.of(-1))
         );
     }
 
